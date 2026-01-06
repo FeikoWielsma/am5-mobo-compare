@@ -19,7 +19,7 @@ const FIELD_RULES = {
 
     // Custom rankings (best to worst) - exact text match
     'custom_rank': {
-        'debug_led': {
+        'debug_features': {
             'Debug LED': 10,
             'POST code': 5,
             'None': 0,
