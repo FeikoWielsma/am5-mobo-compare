@@ -243,6 +243,42 @@ def parse_multi_level_headers(worksheet, start_row, end_row):
         if not leaf_val and clean_parents:
             leaf_val = clean_parents.pop()
         
+        # --- FIX: Clean known suffixes and normalize names ---
+        
+        # Specific fix for 'Total M.2 (M)' -> 'Total M.2'
+        if leaf_val == 'Total M.2 (M)':
+            leaf_val = 'Total M.2'
+
+        # Standardize known field locations to match template expectation
+        # Template expects: m.dot.expansion.storage.pcie_storage.aic
+        if leaf_val == 'AIC':
+             clean_parents = ['Expansion', 'Storage', 'PCIe Storage']
+             
+        # Template expects: m.dot.expansion.storage.pcie_storage.total_m2
+        if leaf_val == 'Total M.2':
+             clean_parents = ['Expansion', 'Storage', 'PCIe Storage']
+             
+        # Template expects: m.dot.expansion.storage.pcie_storage.m2_m
+        if leaf_val == 'M.2 (M)':
+             clean_parents = ['Expansion', 'Storage', 'PCIe Storage']
+
+        # Normalize MOS Heatsink (Some sheets use 'Heatsink' under VRM Config)
+        if leaf_val == 'Heatsink' and any('VRM' in p for p in clean_parents):
+             leaf_val = 'MOS HS'
+
+        # Normalize 'MOS Heatsink Position' to 'MOS HS' (Common in B840, B650, etc.)
+        if leaf_val == 'MOS Heatsink Position':
+             leaf_val = 'MOS HS'
+        
+        # Some sheets use 'VRM Heatsink' at root
+        if leaf_val == 'VRM Heatsink':
+             leaf_val = 'MOS HS'
+             # Ensure it goes to right place if roots are missing
+             if 'Power' not in clean_parents:
+                 clean_parents = ['Power', 'VRM Configuration']
+
+        # -----------------------------------------------------
+
         # Build key
         full_key = normalize_header_key(clean_parents, leaf_val)
         

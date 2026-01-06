@@ -84,7 +84,8 @@
             </tr>
             <tr>
                 <th class="ps-5">Release</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.market.release, m.dot.general.market.release_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.market.release,
+                    m.dot.general.market.release_comment) }}</td> {% endfor %}
             </tr>
 
             <!-- Memory -->
@@ -100,7 +101,8 @@
             </tr>
             <tr>
                 <th class="ps-5">ECC Support</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.memory.ecc_support, m.dot.general.memory.ecc_support_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.memory.ecc_support,
+                    m.dot.general.memory.ecc_support_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">Max Capacity</th>
@@ -127,7 +129,8 @@
             </tr>
             <tr>
                 <th class="ps-5">Wireless</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.networking.wireless, m.dot.general.networking.wireless_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.networking.wireless,
+                    m.dot.general.networking.wireless_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">M.2 Wifi Access</th>
@@ -149,7 +152,8 @@
             </tr>
             <tr>
                 <th class="ps-5">Jacks</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.audio.audio_jacks, m.dot.general.audio.audio_jacks_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.audio.audio_jacks,
+                    m.dot.general.audio.audio_jacks_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">S/PDIF</th>
@@ -165,11 +169,13 @@
             </tr>
             <tr>
                 <th class="ps-5">BIOS Flash</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.buttons.bios_flash, m.dot.general.buttons.bios_flash_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.buttons.bios_flash,
+                    m.dot.general.buttons.bios_flash_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">Clear CMOS</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.buttons.clear_cmos, m.dot.general.buttons.clear_cmos_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.buttons.clear_cmos,
+                    m.dot.general.buttons.clear_cmos_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">Misc</th>
@@ -177,11 +183,13 @@
             </tr>
             <tr>
                 <th class="ps-5">Power</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.buttons.power, m.dot.general.buttons.power_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.buttons.power,
+                    m.dot.general.buttons.power_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">Reset</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.buttons.reset, m.dot.general.buttons.reset_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.buttons.reset,
+                    m.dot.general.buttons.reset_comment) }}</td> {% endfor %}
             </tr>
 
             <!-- Physical -->
@@ -193,7 +201,8 @@
             </tr>
             <tr>
                 <th class="ps-5">PCB Layers</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.physical.pcb_layers, m.dot.general.physical.pcb_layers_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.physical.pcb_layers,
+                    m.dot.general.physical.pcb_layers_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">Backplate</th>
@@ -202,7 +211,8 @@
             </tr>
             <tr>
                 <th class="ps-5">External BCLK</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.physical.external_bclk, m.dot.general.physical.external_bclk_comment) }}</td> {% endfor
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.general.physical.external_bclk,
+                    m.dot.general.physical.external_bclk_comment) }}</td> {% endfor
                 %}
             </tr>
 
@@ -259,7 +269,8 @@
             </tr>
             <tr>
                 <th class="ps-5">PCIe Power</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.power.connectors.pcie, m.dot.power.connectors.pcie_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.power.connectors.pcie,
+                    m.dot.power.connectors.pcie_comment) }}</td> {% endfor %}
             </tr>
 
 
@@ -472,7 +483,8 @@
             </tr>
             <tr>
                 <th class="ps-5">Internal</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.video_outs.modern.internal, m.dot.video_outs.modern.internal_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.video_outs.modern.internal,
+                    m.dot.video_outs.modern.internal_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">USB-C (DP Alt)</th>
@@ -481,11 +493,13 @@
             </tr>
             <tr>
                 <th class="ps-5">HDMI</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.video_outs.modern.hdmi, m.dot.video_outs.modern.hdmi_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.video_outs.modern.hdmi,
+                    m.dot.video_outs.modern.hdmi_comment) }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">DisplayPort</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.video_outs.modern.dp, m.dot.video_outs.modern.dp_comment) }}</td> {% endfor %}
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.video_outs.modern.dp,
+                    m.dot.video_outs.modern.dp_comment) }}</td> {% endfor %}
             </tr>
 
 
@@ -506,7 +520,9 @@
             </tr>
             <tr>
                 <th class="ps-5">x16 Electrical</th>
-                {% for m in mobos %} <td class="text-center small">{{ cell(m.dot.expansion.pcie_slots.physical_x16.electrical_lanes | replace(' ', '<br>') | safe , m.dot.expansion.pcie_slots.physical_x16.electrical_lanes_comment) }}</td> {%
+                {% for m in mobos %} <td class="text-center small">{{
+                    cell(m.dot.expansion.pcie_slots.physical_x16.electrical_lanes | replace(' ', '<br>') | safe ,
+                    m.dot.expansion.pcie_slots.physical_x16.electrical_lanes_comment) }}</td> {%
                 endfor %}
             </tr>
             <tr>
@@ -527,7 +543,8 @@
             </tr>
             <tr>
                 <th class="ps-5">Total Slots</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.expansion.pcie_slots.total_slot_count, m.dot.expansion.pcie_slots.total_slot_count_comment) }}</td> {%
+                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.expansion.pcie_slots.total_slot_count,
+                    m.dot.expansion.pcie_slots.total_slot_count_comment) }}</td> {%
                 endfor %}
             </tr>
 
@@ -543,12 +560,12 @@
                 {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.sata }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-5">M.2 Gen 5</th>
+                <th class="ps-5">M.2 (M)</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.pcie_storage.m2_m | replace(' ',
                     '<br>') | safe }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-5">Total M.2</th>
+                <th class="ps-5">Total M.2 (M)</th>
                 {% for m in mobos %} <td class="text-center fw-bold">{{ m.dot.expansion.storage.pcie_storage.total_m2 }}
                 </td> {% endfor %}
             </tr>
@@ -557,11 +574,7 @@
                 {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.pcie_storage.aic }}</td> {%
                 endfor %}
             </tr>
-            <tr>
-                <th class="ps-5">SlimSAS</th>
-                {% for m in mobos %} <td class="text-center">{{ cell(m.dot.expansion.storage.pcie_storage.slimsas, m.dot.expansion.storage.pcie_storage.slimsas_comment) }}</td> {%
-                endfor %}
-            </tr>
+
 
             <!-- BOARD INFO -->
             <tr class="table-secondary section-header" data-section="meta" style="cursor: pointer;">
@@ -664,9 +677,9 @@
                 {% for m in mobos %}
                 <td class="text-center small text-muted">
                     {% if m.dot.notes and m.dot.notes.details %}
-                        {{ m.dot.notes.details }}
+                    {{ m.dot.notes.details }}
                     {% else %}
-                        -
+                    -
                     {% endif %}
                 </td>
                 {% endfor %}
