@@ -1,0 +1,101 @@
+/* Global Overrides */
+.table-hover tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* Compare Bar */
+.compare-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #333;
+    color: white;
+    padding: 1rem;
+    display: none;
+    z-index: 1000;
+}
+
+/* 1. Global Layout & Stickiness (Compare View) */
+
+/* Sticky Toolbar: Always at the very top of the window */
+.sticky-toolbar {
+    position: sticky;
+    top: -24px;
+    /* Offset for better vertical alignment if navbar is present, or 0 if not. */
+    /* Navbar is static flow, so we stick to top after scrolling past it? 
+       Actually user wants it sticky. 
+       If parent is body, top:0 works. */
+    top: 0;
+    z-index: 1050;
+    background-color: white;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.75rem 0;
+    margin-bottom: 0;
+}
+
+/* Table Container: To make sticky headers work reliably with horizontal scroll */
+.table-container {
+    position: relative;
+    max-height: 85vh;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+}
+
+/* Sticky Headers: Inside the scrollable container */
+.sticky-header th {
+    position: sticky;
+    top: 0;
+    z-index: 1045;
+    background-color: #343a40 !important;
+    color: white !important;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+    background-clip: padding-box;
+}
+
+/* Category Headers */
+.category-header,
+.sub-category-header {
+    position: sticky;
+    top: 60px;
+    z-index: 1010;
+}
+
+/* 2. Highlight Toggle Logic */
+table.no-highlight .table-warning,
+table.no-highlight tr.table-warning,
+table.no-highlight td.table-warning {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: inset 0 0 0 9999px transparent !important;
+    --bs-table-bg-state: transparent !important;
+    --bs-table-bg-type: transparent !important;
+    --bs-table-accent-bg: transparent !important;
+    --bs-table-striped-bg: transparent !important;
+    --bs-table-bg: transparent !important;
+    color: inherit !important;
+}
+
+/* Ensure text visibility on highlighted rows if they were dark */
+.table-warning {
+    color: #000 !important;
+}
+
+/* 3. Helper Classes */
+.hide-identical .identical-row {
+    display: none !important;
+}
+
+.icon-container {
+    display: inline-block;
+    width: 1.5rem;
+    text-align: center;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.clickable:hover {
+    opacity: 0.9;
+}

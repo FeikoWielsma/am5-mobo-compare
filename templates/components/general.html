@@ -1,0 +1,13 @@
+<div class="component-box mb-2 h-100 border-0 bg-transparent shadow-none">
+    <div class="component-body text-center p-0">
+        <div class="small text-secondary text-uppercase">{{ m.general.brand }}</div>
+        <div class="fs-5 fw-bold text-dark">{{ m.general.model }}</div>
+        <div class="mt-1">
+            <span class="badge bg-secondary">{{ m.general.chipset }}</span>
+            <span class="badge bg-light text-dark border">{{ m.general.form_factor }}</span>
+        </div>
+        {% if m.general.socket_ren %}
+        <div class="small text-muted mt-1">{{ m.general.socket_ren }}</div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,29 @@
+<div class="component-box mb-2">
+    <div class="component-header">Rear I/O</div>
+    <div class="component-body">
+        <div class="d-flex justify-content-between">
+            <span class="text-muted">Total USB</span>
+            <span class="fw-bold fs-5">{{ m.back_io.get('usb_total', '0') }}</span>
+        </div>
+
+        <div class="row g-1 mt-1 small">
+            <div class="col-6">
+                Type-C: <b>{{ m.back_io.get('usb_c', '-') }}</b>
+            </div>
+            <div class="col-6">
+                Type-A: <b>{{ m.back_io.get('usb_a', '-') }}</b>
+            </div>
+        </div>
+
+        {% if m.back_io.get('flash_btn') == 'Yes' or m.back_io.get('clear_cmos') == 'Yes' %}
+        <div class="mt-2 pt-1 border-top d-flex gap-1 flex-wrap">
+            {% if m.back_io.get('flash_btn') == 'Yes' %}
+            <span class="badge bg-secondary">BIOS Flash</span>
+            {% endif %}
+            {% if m.back_io.get('clear_cmos') == 'Yes' %}
+            <span class="badge bg-secondary">Clear CMOS</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
