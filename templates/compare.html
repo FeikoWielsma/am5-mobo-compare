@@ -8,7 +8,23 @@
 </div>
 
 <div class="sticky-toolbar p-2 bg-light border-bottom">
-    <div class="fw-bold">Comparison</div>
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="fw-bold">Comparison Options</div>
+        <div class="d-flex gap-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="hideSameToggle">
+                <label class="form-check-label" for="hideSameToggle">
+                    Hide Identical Values
+                </label>
+            </div>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="highlightDiffToggle">
+                <label class="form-check-label" for="highlightDiffToggle">
+                    Highlight Differences
+                </label>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="table-container">
@@ -21,7 +37,7 @@
                     <div>{{ m.brand }}</div>
                     <div class="fs-5">{{ m.model }}</div>
                     <span class="badge bg-secondary">{{ m.chipset }}</span>
-                    <span class="badge bg-secondary">{{ m.dot.form_factor }}</span>
+                    <span class="badge bg-secondary">{{ m.dot.motherboard.general.form_factor }}</span>
 
                     {# Image View Link #}
                     {% if m.dot.rear_io_image.view %}
@@ -35,13 +51,19 @@
         <tbody>
 
             <!-- GENERAL -->
-            <tr class="table-secondary">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">General</th>
+            <tr class="table-secondary section-header" data-section="general" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">
+                    <i class="bi bi-chevron-down"></i> General
+                    <span class="collapsed-subsections-badge" data-parent="general"></span>
+                </th>
             </tr>
 
             <!-- Market -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Market</th>
+            <tr class="table-light subsection-header" data-subsection="general-market" data-parent="general"
+                style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Market
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">Price (MSRP)</th>
@@ -53,8 +75,11 @@
             </tr>
 
             <!-- Memory -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Memory</th>
+            <tr class="table-light subsection-header" data-subsection="general-memory" data-parent="general"
+                style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Memory
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">RAM Slots</th>
@@ -70,8 +95,11 @@
             </tr>
 
             <!-- Networking -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Networking</th>
+            <tr class="table-light subsection-header" data-subsection="general-networking" data-parent="general"
+                style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Networking
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">LAN Controller</th>
@@ -94,8 +122,11 @@
             </tr>
 
             <!-- Audio -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Audio</th>
+            <tr class="table-light subsection-header" data-subsection="general-audio" data-parent="general"
+                style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Audio
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">Codec + DAC</th>
@@ -112,8 +143,11 @@
             </tr>
 
             <!-- Buttons -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Buttons</th>
+            <tr class="table-light subsection-header" data-subsection="general-buttons" data-parent="general"
+                style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Buttons
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">BIOS Flash</th>
@@ -137,8 +171,11 @@
             </tr>
 
             <!-- Physical -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Physical</th>
+            <tr class="table-light subsection-header" data-subsection="general-physical" data-parent="general"
+                style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Physical
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">PCB Layers</th>
@@ -157,12 +194,16 @@
 
 
             <!-- POWER -->
-            <tr class="table-secondary">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Power</th>
+            <tr class="table-secondary section-header" data-section="power" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">
+                    <i class="bi bi-chevron-down"></i> Power
+                    <span class="collapsed-subsections-badge" data-parent="power"></span>
+                </th>
             </tr>
 
             <!-- VRM Config -->
-            <tr class="table-light subsection-header" data-subsection="power-vrm" data-parent="power" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="power-vrm" data-parent="power"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> VRM Configuration
                 </th>
@@ -189,7 +230,8 @@
             </tr>
 
             <!-- Connectors -->
-            <tr class="table-light subsection-header" data-subsection="power-connectors" data-parent="power" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="power-connectors" data-parent="power"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Connectors
                 </th>
@@ -206,12 +248,16 @@
 
 
             <!-- INTERNAL HEADERS -->
-            <tr class="table-secondary">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Internal Headers & Features</th>
+            <tr class="table-secondary section-header" data-section="internal" style="cursor: pointer;">
+                <th colspan="{{ mobos|length +1 }}" class="text-uppercase">
+                    <i class="bi bi-chevron-down"></i> Internal Headers & Features
+                    <span class="collapsed-subsections-badge" data-parent="internal"></span>
+                </th>
             </tr>
 
             <!-- Fans & RGB -->
-            <tr class="table-light subsection-header" data-subsection="internal-fans" data-parent="internal" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="internal-fans" data-parent="internal"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Fans and RGB
                 </th>
@@ -238,7 +284,8 @@
             </tr>
 
             <!-- Legacy -->
-            <tr class="table-light subsection-header" data-subsection="internal-legacy" data-parent="internal" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="internal-legacy" data-parent="internal"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Legacy
                 </th>
@@ -255,7 +302,8 @@
             </tr>
 
             <!-- Features -->
-            <tr class="table-light subsection-header" data-subsection="internal-features" data-parent="internal" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="internal-features" data-parent="internal"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Features
                 </th>
@@ -287,7 +335,8 @@
             </tr>
 
             <!-- USB/TB -->
-            <tr class="table-light subsection-header" data-subsection="internal-usb" data-parent="internal" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="internal-usb" data-parent="internal"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> USB / Thunderbolt
                 </th>
@@ -315,12 +364,16 @@
 
 
             <!-- REAR I/O -->
-            <tr class="table-secondary">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Rear I/O</th>
+            <tr class="table-secondary section-header" data-section="rear-io" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">
+                    <i class="bi bi-chevron-down"></i> Rear I/O
+                    <span class="collapsed-subsections-badge" data-parent="rear-io"></span>
+                </th>
             </tr>
 
             <!-- Legacy -->
-            <tr class="table-light subsection-header" data-subsection="internal-legacy" data-parent="internal" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="rear-io-legacy" data-parent="rear-io"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Legacy
                 </th>
@@ -331,7 +384,8 @@
             </tr>
 
             <!-- USB -->
-            <tr class="table-light subsection-header" data-subsection="rear-io-usb" data-parent="rear-io" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="rear-io-usb" data-parent="rear-io"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> USB
                 </th>
@@ -386,12 +440,16 @@
 
 
             <!-- VIDEO OUTS -->
-            <tr class="table-secondary">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Video Outputs</th>
+            <tr class="table-secondary section-header" data-section="video" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">
+                    <i class="bi bi-chevron-down"></i> Video Outputs
+                    <span class="collapsed-subsections-badge" data-parent="video"></span>
+                </th>
             </tr>
 
             <!-- Modern -->
-            <tr class="table-light subsection-header" data-subsection="video-modern" data-parent="video" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="video-modern" data-parent="video"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Modern
                 </th>
@@ -416,12 +474,16 @@
 
 
             <!-- EXPANSION -->
-            <tr class="table-secondary">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Expansion</th>
+            <tr class="table-secondary section-header" data-section="expansion" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">
+                    <i class="bi bi-chevron-down"></i> Expansion
+                    <span class="collapsed-subsections-badge" data-parent="expansion"></span>
+                </th>
             </tr>
 
             <!-- PCIe Slots -->
-            <tr class="table-light subsection-header" data-subsection="expansion-pcie" data-parent="expansion" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="expansion-pcie" data-parent="expansion"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> PCIe Slots
                 </th>
@@ -429,7 +491,8 @@
             <tr>
                 <th class="ps-5">x16 Electrical</th>
                 {% for m in mobos %} <td class="text-center small">{{
-                    m.dot.expansion.pcie_slots.physical_x16.electrical_lanes }}</td> {% endfor %}
+                    m.dot.expansion.pcie_slots.physical_x16.electrical_lanes | replace(' ', '<br>') | safe }}</td> {%
+                endfor %}
             </tr>
             <tr>
                 <th class="ps-5">x16 Total</th>
@@ -439,7 +502,8 @@
             <tr>
                 <th class="ps-5">x1/x4 Electrical</th>
                 {% for m in mobos %} <td class="text-center small">{{
-                    m.dot.expansion.pcie_slots.physical_x1x4.electrical_lanes }}</td> {% endfor %}
+                    m.dot.expansion.pcie_slots.physical_x1x4.electrical_lanes | replace(' ', '<br>') | safe }}</td> {%
+                endfor %}
             </tr>
             <tr>
                 <th class="ps-5">x1/x4 Total</th>
@@ -453,7 +517,8 @@
             </tr>
 
             <!-- Storage -->
-            <tr class="table-light subsection-header" data-subsection="expansion-storage" data-parent="expansion" style="cursor: pointer;">
+            <tr class="table-light subsection-header" data-subsection="expansion-storage" data-parent="expansion"
+                style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
                     <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Storage
                 </th>
@@ -464,8 +529,8 @@
             </tr>
             <tr>
                 <th class="ps-5">M.2 Gen 5</th>
-                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.pcie_storage.m2_m }}</td> {%
-                endfor %}
+                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.pcie_storage.m2_m | replace(' ',
+                    '<br>') | safe }}</td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">Total M.2</th>
@@ -540,8 +605,15 @@
             </tr>
             <tr>
                 <th class="ps-4">Details</th>
-                {% for m in mobos %} <td class="text-center small text-muted">{{ m.dot.notes.details }}</td> {% endfor
-                %}
+                {% for m in mobos %}
+                <td class="text-center small text-muted">
+                    {% if m.dot.notes and m.dot.notes.details %}
+                    {{ m.dot.notes.details }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                {% endfor %}
             </tr>
 
 
@@ -549,4 +621,8 @@
     </table>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/compare.js') }}"></script>
 {% endblock %}

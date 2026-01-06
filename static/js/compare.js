@@ -87,6 +87,7 @@ function toggleSection(sectionName) {
 
     saveCollapsedState();
     applySectionCollapse();
+    applySubsectionCollapse();
 }
 
 /**
@@ -161,18 +162,22 @@ function applySubsectionCollapse() {
                 currentRow = currentRow.nextElementSibling;
             }
         } else {
-            // Show the subsection header
-            header.style.display = '';
+            // Only show if parent section is expanded
+            const parentSection = header.getAttribute('data-parent');
+            if (!collapsedSections.has(parentSection)) {
+                // Show the subsection header
+                header.style.display = '';
 
-            // Show content rows
-            let currentRow = header.nextElementSibling;
-            while (currentRow &&
-                !currentRow.classList.contains('subsection-header') &&
-                !currentRow.classList.contains('section-header')) {
-                if (!currentRow.getAttribute('data-hidden-by-filter')) {
-                    currentRow.style.display = '';
+                // Show content rows
+                let currentRow = header.nextElementSibling;
+                while (currentRow && 
+                    !currentRow.classList.contains('subsection-header') && 
+                    !currentRow.classList.contains('section-header')) {
+                    if (!currentRow.getAttribute('data-hidden-by-filter')) {
+                        currentRow.style.display = '';
+                    }
+                    currentRow = currentRow.nextElementSibling;
                 }
-                currentRow = currentRow.nextElementSibling;
             }
         }
     });
