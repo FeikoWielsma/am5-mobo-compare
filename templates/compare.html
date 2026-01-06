@@ -2,73 +2,121 @@
 
 {% block content %}
 <style>
-    /* Sticky Header Logic */
-    /* Ensure the table responsive container allows vertical overflow so headers stick to the viewport */
-    .table-responsive {
-        overflow-y: visible !important;
-        overflow-x: auto !important;
-    }
+    /* 1. Global Layout & Stickiness */
 
-    /* Toolbar Stickiness */
+    /* Sticky Toolbar: Always at the very top of the window */
     .sticky-toolbar {
         position: sticky;
+        top: -24px;
+        /* Offset for better vertical alignment if navbar is present, or 0 if not. */
+        /* Wait, base.html has a navbar that is NOT sticky. 
+           So when we scroll past the navbar, this sticks to top: 0. */
         top: 0;
-        z-index: 1040;
-        /* Higher than headers */
-        background: rgba(255, 255, 255, 0.95);
-        border-bottom: 1px solid #dee2e6;
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        margin-bottom: 0 !important;
+        z-index: 1050;
+        background-color: white;
+        border-bottom: 2px solid #dee2e6;
+        padding: 0.75rem 0;
+        margin-bottom: 0;
+        /* Align with table header */
     }
 
-    /* Table Header Stickiness */
+    /* Table Container: To make sticky headers work reliably with horizontal scroll, 
+       we use a scrollable height for the container. */
+    .table-container {
+        position: relative;
+        max-height: 85vh;
+        /* Allow scrolling within the table area */
+        overflow: auto;
+        /* Handles both X and Y scroll */
+        border: 1px solid #dee2e6;
+    }
+
+    /* Sticky Headers: Inside the scrollable container, they stick to its top: 0. */
     .sticky-header th {
         position: sticky;
-        top: 45px;
-        /* Adjust based on toolbar height */
-        z-index: 1020;
+        top: 0;
+        z-index: 1045;
+        /* Above category headers */
         background-color: #343a40 !important;
-        /* Ensure opacity */
-        color: white;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        color: white !important;
+        box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
         background-clip: padding-box;
-        /* Fix border rendering */
     }
 
-    /* Hide Identical Logic via class */
-    .hide-identical .leaf-row:not(.table-warning) {
+    /* Category Headers: Relative positioning to allow them to stay below the sticky header */
+    .category-header,
+    .sub-category-header {
+        position: sticky;
+        top: 60px;
+        /* This would stick them too, but we usually want them to scroll. 
+                      However, if they stick, we need layered offsets. 
+                      User only asked for Motherboard names to be pinned. 
+                      So we keep them relative/z-indexed for layering. */
+        z-index: 1010;
+    }
+
+    /* 2. Highlight Toggle Logic (Aggressive overrides) */
+    table.no-highlight .table-warning,
+    table.no-highlight tr.table-warning,
+    table.no-highlight td.table-warning {
+        background-color: transparent !important;
+        background-image: none !important;
+        box-shadow: inset 0 0 0 9999px transparent !important;
+        /* Clear Bootstrap inset shadow */
+        --bs-table-bg-state: transparent !important;
+        --bs-table-bg-type: transparent !important;
+        --bs-table-accent-bg: transparent !important;
+        --bs-table-striped-bg: transparent !important;
+        --bs-table-bg: transparent !important;
+        color: inherit !important;
+    }
+
+    /* Ensure text visibility on highlighted rows if they were dark */
+    .table-warning {
+        color: #000 !important;
+    }
+
+    /* 3. Helper Classes */
+    .hide-identical .identical-row {
         display: none !important;
     }
 
-    /* Highlight Diff Logic: Toggle off styling */
-    table.no-highlight .table-warning {
-        --bs-table-bg: transparent !important;
-        background-color: transparent !important;
+    .icon-container {
+        display: inline-block;
+        width: 1.5rem;
+        text-align: center;
+    }
+
+    /* Clean clickable style */
+    .clickable {
+        cursor: pointer;
+    }
+
+    .clickable:hover {
+        opacity: 0.9;
     }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Comparison</h1>
-    <div class="btn-group">
-        <a href="/" class="btn btn-outline-secondary">Back to List</a>
-    </div>
+    <a href="/" class="btn btn-outline-secondary">Back to List</a>
 </div>
 
-<div class="table-responsive">
-    <!-- Sticky Toolbar inside the scroll container context (or above it) -->
-    <!-- Placing it inside ensures it aligns with table width but might scroll away if not handled. 
-         With overflow-y: visible, it sticks to viewport. -->
-    <div class="sticky-toolbar d-flex gap-2 align-items-center mb-2 px-1">
+<!-- Sticky Toolbar -->
+<div class="sticky-toolbar">
+    <div class="d-flex gap-2 align-items-center px-2">
         <button class="btn btn-sm btn-outline-primary" onclick="expandAll()">Expand All</button>
         <button class="btn btn-sm btn-outline-secondary" onclick="collapseAll()">Collapse All</button>
-        <div class="vr"></div>
+        <div class="vr mx-1"></div>
         <button class="btn btn-sm btn-outline-danger" id="btn-highlight" onclick="toggleHighlight()">Highlight Diff:
             ON</button>
         <button class="btn btn-sm btn-outline-dark" id="btn-hide-identical" onclick="toggleHideIdentical()">Hide
             Identical: OFF</button>
+        <span class="ms-auto text-muted small">Scroll inside table for wide comparisons →</span>
     </div>
+</div>
 
+<div class="table-container">
     <table class="table table-bordered table-striped" id="compareTable">
         <thead class="table-dark sticky-header">
             <tr>
@@ -82,24 +130,19 @@
             </tr>
         </thead>
         <tbody>
-            {# Helper macro for leaf row #}
+            {# Leaf Row Macro #}
             {% macro render_row(key, label, level, parent_id, path_id) %}
             {% set values = [] %}
             {% for m in mobos %}
-            {# Use format_val from context #}
             {% set val = format_val(m.get(key, '')) %}
             {% set _ = values.append(val) %}
             {% endfor %}
 
-            {# Check if values differ using robust unique check #}
-            {# Convert to string to ensure comparision works (though format_val returns str) #}
             {% set unique_values = values | unique | list %}
             {% set is_diff = unique_values | length > 1 %}
 
-            {# Add 'diff-row' class if different, for easy JS selection #}
             <tr class="leaf-row {{ 'table-warning' if is_diff else '' }} {{ 'diff-row' if is_diff else 'identical-row' }} {{ parent_id }}"
                 data-parent="{{ parent_id }}" data-id="{{ path_id }}">
-                {# Create indent based on level #}
                 <td class="text-wrap" style="padding-left: {{ level * 20 }}px;">
                     {% if level > 0 %}<span class="text-muted me-1">↳</span>{% endif %}
                     {{ label }}
@@ -122,46 +165,35 @@
             </tr>
             {% endmacro %}
 
-            {# Recursive macro for nodes #}
+            {# Recursive Node Macro #}
             {% macro render_node(node, level, parent_id, parent_path) %}
-            {# Generate stable ID based on path #}
             {% set current_path = parent_path ~ '/' ~ node.name if parent_path else node.name %}
-            {# Sanitize for HTML ID #}
             {% set unique_id = 'node_' ~ (current_path | replace(' ', '_') | replace('/', '_') | replace(',', '_') |
             replace('.', '_') | replace('(', '') | replace(')', '') | replace('+', '_')) %}
 
             {% if node.children %}
-            {# It is a Category / Parent #}
-            {# Row 1: Main Header (Expanded View) #}
             <tr id="header_{{ unique_id }}"
                 class="{{ 'table-dark category-header' if level == 0 else 'table-secondary sub-category-header' }} clickable {{ parent_id }}"
                 data-parent="{{ parent_id }}" data-id="{{ unique_id }}" onclick="toggleNode('{{ unique_id }}')">
-                {# Header Cell #}
-                <th colspan="{{ mobos|length + 1 }}" class="{{ 'ps-2' if level == 0 else '' }}"
-                    style="padding-left: {{ level * 20 }}px; cursor: pointer;">
-                    {# Fixed width icon container #}
-                    <span style="display: inline-block; width: 1.5rem; text-align: center;">
+                <th colspan="{{ mobos|length + 1 }}" style="padding-left: {{ level * 20 }}px; cursor: pointer;">
+                    <span class="icon-container">
                         <i class="bi bi-caret-down-fill" id="icon_{{ unique_id }}"></i>
                     </span>
                     {{ node.name }}
                 </th>
             </tr>
 
-            {# Row 2: Summary Header (Collapsed View) #}
             {% if node.summary_key %}
             <tr id="summary_{{ unique_id }}"
                 class="{{ 'table-dark' if level == 0 else 'table-secondary' }} clickable {{ parent_id }}"
                 data-parent="{{ parent_id }}" data-id="{{ unique_id }}" style="display: none;"
                 onclick="toggleNode('{{ unique_id }}')">
-                {# Label Column #}
-                <th class="ps-2" style="padding-left: {{ level * 20 }}px; cursor: pointer;">
-                    {# Icon Container #}
-                    <span style="display: inline-block; width: 1.5rem; text-align: center;">
+                <th style="padding-left: {{ level * 20 }}px; cursor: pointer;">
+                    <span class="icon-container">
                         <i class="bi bi-caret-right-fill"></i>
                     </span>
                     {{ node.name }}
                 </th>
-                {# Data Columns #}
                 {% for m in mobos %}
                 {% set val = format_val(m.get(node.summary_key, '')) %}
                 <td>
@@ -178,12 +210,10 @@
             {{ render_node(child, level + 1, unique_id, current_path) }}
             {% endfor %}
             {% else %}
-            {# It is a Leaf with a key #}
             {{ render_row(node.key, node.name, level, parent_id, unique_id) }}
             {% endif %}
             {% endmacro %}
 
-            {# Iterate through Structure #}
             {% for item in structure %}
             {{ render_node(item, 0, 'root', '') }}
             {% endfor %}
@@ -193,16 +223,12 @@
 </div>
 
 <script>
-    // State: Set of COLLAPSED Node IDs
     const collapsedNodes = new Set();
     const childrenMap = {};
-
-    // Feature Toggle States
     let hideIdentical = false;
     let highlightDiff = true;
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Build children map
         document.querySelectorAll('tr[data-parent]').forEach(tr => {
             const pid = tr.getAttribute('data-parent');
             if (pid) {
@@ -210,22 +236,36 @@
                 childrenMap[pid].push(tr);
             }
         });
+        calculateSubtreeDiffs();
+        updateVisibility();
     });
+
+    function calculateSubtreeDiffs() {
+        document.querySelectorAll('.diff-row').forEach(row => {
+            let pid = row.getAttribute('data-parent');
+            while (pid && pid !== 'root') {
+                const header = document.getElementById('header_' + pid);
+                const summary = document.getElementById('summary_' + pid);
+                if (header) header.setAttribute('data-has-diff', 'true');
+                if (summary) summary.setAttribute('data-has-diff', 'true');
+                const parentRow = document.getElementById('header_' + pid);
+                pid = parentRow ? parentRow.getAttribute('data-parent') : null;
+            }
+        });
+    }
 
     function toggleHighlight() {
         highlightDiff = !highlightDiff;
         const btn = document.getElementById('btn-highlight');
-
+        const table = document.getElementById('compareTable');
         if (highlightDiff) {
             btn.textContent = "Highlight Diff: ON";
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-outline-danger');
-            document.getElementById('compareTable').classList.remove('no-highlight');
+            btn.classList.replace('btn-outline-secondary', 'btn-outline-danger');
+            table.classList.remove('no-highlight');
         } else {
             btn.textContent = "Highlight Diff: OFF";
-            btn.classList.remove('btn-outline-danger');
-            btn.classList.add('btn-outline-secondary');
-            document.getElementById('compareTable').classList.add('no-highlight');
+            btn.classList.replace('btn-outline-danger', 'btn-outline-secondary');
+            table.classList.add('no-highlight');
         }
     }
 
@@ -236,15 +276,14 @@
 
         if (hideIdentical) {
             btn.textContent = "Hide Identical: ON";
-            btn.classList.remove('btn-outline-dark');
-            btn.classList.add('btn-dark');
+            btn.classList.replace('btn-outline-dark', 'btn-dark');
             table.classList.add('hide-identical');
         } else {
             btn.textContent = "Hide Identical: OFF";
-            btn.classList.remove('btn-dark');
-            btn.classList.add('btn-outline-dark');
+            btn.classList.replace('btn-dark', 'btn-outline-dark');
             table.classList.remove('hide-identical');
         }
+        updateVisibility();
     }
 
     function toggleNode(nodeId) {
@@ -262,18 +301,15 @@
     }
 
     function collapseAll() {
-        // Collapse all Headers
         document.querySelectorAll('[data-id]').forEach(el => {
             if (el.id.startsWith('header_')) {
-                const id = el.getAttribute('data-id');
-                collapsedNodes.add(id);
+                collapsedNodes.add(el.getAttribute('data-id'));
             }
         });
         updateVisibility();
     }
 
     function updateVisibility() {
-        // Roots are in childrenMap['root']
         const roots = childrenMap['root'] || [];
         roots.forEach(r => {
             const id = r.getAttribute('data-id');
@@ -285,20 +321,21 @@
 
     function processNode(nodeId, hiddenByAncestor) {
         const isCollapsed = collapsedNodes.has(nodeId);
-
         const headerRow = document.getElementById('header_' + nodeId);
         const summaryRow = document.getElementById('summary_' + nodeId);
 
-        if (hiddenByAncestor) {
+        let hidesEntirely = false;
+        if (hideIdentical && headerRow && !headerRow.hasAttribute('data-has-diff')) {
+            hidesEntirely = true;
+        }
+
+        if (hiddenByAncestor || hidesEntirely) {
             if (headerRow) headerRow.style.display = 'none';
             if (summaryRow) summaryRow.style.display = 'none';
 
-            // Hide children RECURSIVELY
             const children = childrenMap[nodeId] || [];
             children.forEach(childRow => {
-                // SKIP Summary rows in general loop
                 if (childRow.id.startsWith('summary_')) return;
-
                 const childId = childRow.getAttribute('data-id');
                 if (childId && childRow.id.startsWith('header_')) {
                     processNode(childId, true);
@@ -307,27 +344,21 @@
                 }
             });
         } else {
-            // Visible
             if (isCollapsed) {
-                // Collapsed state
                 if (summaryRow) {
                     if (headerRow) headerRow.style.display = 'none';
                     summaryRow.style.display = '';
                 } else {
                     if (headerRow) {
                         headerRow.style.display = '';
-                        // Update Icon within the Span
                         const icon = headerRow.querySelector('i');
-                        if (icon) { icon.classList.remove('bi-caret-down-fill'); icon.classList.add('bi-caret-right-fill'); }
+                        if (icon) { icon.className = 'bi bi-caret-right-fill'; }
                     }
                 }
 
-                // Hide Children RECURSIVELY
                 const children = childrenMap[nodeId] || [];
                 children.forEach(childRow => {
-                    // SKIP Summary rows
                     if (childRow.id.startsWith('summary_')) return;
-
                     const childId = childRow.getAttribute('data-id');
                     if (childId && childRow.id.startsWith('header_')) {
                         processNode(childId, true);
@@ -335,22 +366,17 @@
                         childRow.style.display = 'none';
                     }
                 });
-
             } else {
-                // Expanded state
                 if (headerRow) {
                     headerRow.style.display = '';
                     const icon = headerRow.querySelector('i');
-                    if (icon) { icon.classList.remove('bi-caret-right-fill'); icon.classList.add('bi-caret-down-fill'); }
+                    if (icon) { icon.className = 'bi bi-caret-down-fill'; }
                 }
                 if (summaryRow) summaryRow.style.display = 'none';
 
-                // Show Children RECURSIVELY (Expand)
                 const children = childrenMap[nodeId] || [];
                 children.forEach(childRow => {
-                    // SKIP Summary rows
                     if (childRow.id.startsWith('summary_')) return;
-
                     const childId = childRow.getAttribute('data-id');
                     if (childId && childRow.id.startsWith('header_')) {
                         processNode(childId, false);
