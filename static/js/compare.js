@@ -12,6 +12,20 @@ let collapsedSubsections = new Set();
 
 // Field-specific comparison rules
 const FIELD_RULES = {
+    // Fields to ignore in diff highlighting (never highlight these)
+    'ignored_fields': [
+        'release',
+        'notes',
+        'details',
+        'color',
+        'heatsink',
+        'pcb',
+        'primary',
+        'accent',
+        'textaccent',
+        'superiocontroller'
+    ],
+
     // Lower is better
     'lower_is_better': [
         'amsrpusd',  // Price field
@@ -19,9 +33,14 @@ const FIELD_RULES = {
 
     // Custom rankings (best to worst) - exact text match
     'custom_rank': {
-        'debug_features': {
+        'debug': {  // Matches any field with "debug" in name
+            'LCD Display': 15,
+            'LCD': 15,
+            'Debug LEDs': 10,
             'Debug LED': 10,
             'POST code': 5,
+            'POST': 5,
+            'Power LED': 1,
             'None': 0,
             '-': 0,
             '': 0
@@ -493,6 +512,85 @@ function parseValue(text) {
     return { text, score: parseInt(numbers[0]), isNumeric: numbers.length > 0 };
 }
 
+
+
+/**
+ * Check if a field should use "lower is better" logic
+ */
+function isLowerBetter(fieldName) {
+    return FIELD_RULES.lower_is_better.some(field =>
+        fieldName.toLowerCase().includes(field.toLowerCase())
+    );
+}
+
+/**
+ * Get custom rank for a value in a specific field
+ */
+function getCustomRank(fieldName, value) {
+    const normalizedFieldName = fieldName.toLowerCase();
+    const normalizedValue = value.trim();
+
+    for (const [field, rankings] of Object.entries(FIELD_RULES.custom_rank)) {
+        if (normalizedFieldName.includes(field.toLowerCase())) {
+            // Try exact match first
+            if (rankings[normalizedValue] !== undefined) {
+                return rankings[normalizedValue];
+            }
+
+            // Try case-insensitive match
+            for (const [rankKey, rankValue] of Object.entries(rankings)) {
+                if (rankKey.toLowerCase() === normalizedValue.toLowerCase()) {
+                    return rankValue;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * Parse VRM configuration strings like "2x10+2+2" into total phase count
+ */
+function parseVRM(text) {
+    if (!text || text === '-' || text === '') return null;
+
+    // Pattern: "2x10+2+2" or "16+2+1" or just "16"
+    const vrmPattern = /^(\d+)x(\d+)([+\d]+)?$/;
+    const simplePattern = /^(\d+)([+\d]+)?$/;
+
+    let match = text.match(vrmPattern);
+    if (match) {
+        const [, multiplier, base, additional] = match;
+        let total = parseInt(multiplier) * parseInt(base);
+
+        if (additional) {
+            const extras = additional.match(/\d+/g);
+            if (extras) {
+                total += extras.reduce((sum, n) => sum + parseInt(n), 0);
+            }
+        }
+
+        return { text, score: total, isNumeric: true, isVRM: true };
+    }
+
+    match = text.match(simplePattern);
+    if (match) {
+        const [, base, additional] = match;
+        let total = parseInt(base);
+
+        if (additional) {
+            const extras = additional.match(/\d+/g);
+            if (extras) {
+                total += extras.reduce((sum, n) => sum + parseInt(n), 0);
+            }
+        }
+
+        return { text, score: total, isNumeric: true, isVRM: true };
+    }
+
+    return null;
+}
+
 /**
  * Analyze table and mark rows/cells based on better/worse values with gradient coloring
  */
@@ -506,6 +604,12 @@ function analyzeTable() {
         if (!firstCell || firstCell.hasAttribute('colspan')) {
             return;
         }
+
+        // Get field name from first cell to check if it should be ignored
+        const fieldName = firstCell.textContent.trim().toLowerCase();
+        const shouldIgnore = FIELD_RULES.ignored_fields.some(ignored =>
+            fieldName.includes(ignored)
+        );
 
         const dataCells = Array.from(row.querySelectorAll('td'));
 
@@ -529,18 +633,82 @@ function analyzeTable() {
         } else {
             row.setAttribute('data-has-diff', 'true');
 
-            const parsedValues = values.map(v => parseValue(v.text));
+            // Skip highlighting if this field is ignored
+            if (shouldIgnore) {
+                return;
+            }
+
+            // Count occurrences of each value to find majority vs minority
+            const valueCounts = {};
+            normalizedTexts.forEach(v => {
+                valueCounts[v] = (valueCounts[v] || 0) + 1;
+            });
+
+            // Find the most common value (majority)
+            let majorityValue = null;
+            let maxCount = 0;
+            for (const [value, count] of Object.entries(valueCounts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    majorityValue = value;
+                }
+            }
+
+            // Try VRM parsing first for phase config fields
+            const isVRMField = fieldName.includes('phase') || fieldName.includes('vrm') || fieldName.includes('vcore');
+
+            const parsedValues = values.map(v => {
+                // Try VRM parser first if it's a VRM-related field
+                if (isVRMField) {
+                    const vrmParsed = parseVRM(v.text);
+                    if (vrmParsed) return vrmParsed;
+                }
+
+                // Check for custom rank
+                const customRank = getCustomRank(fieldName, v.text);
+                if (customRank !== null) {
+                    return { text: v.text, score: customRank, isNumeric: true, isCustomRank: true };
+                }
+
+                // Fall back to default parser
+                return parseValue(v.text);
+            });
             const hasNumeric = parsedValues.some(pv => pv && pv.isNumeric);
 
             if (hasNumeric) {
                 // Extract numeric scores (treat non-numeric as -Infinity)
                 const scores = parsedValues.map(pv => pv && pv.isNumeric ? pv.score : -Infinity);
-                const maxScore = Math.max(...scores);
-                const minScore = Math.min(...scores.filter(s => s !== -Infinity));
+
+                // Check if lower is better for this field (e.g., price)
+                const lowerIsBetter = isLowerBetter(fieldName);
+
+                const maxScore = lowerIsBetter ? Math.min(...scores.filter(s => s !== -Infinity)) : Math.max(...scores);
+                const minScore = lowerIsBetter ? Math.max(...scores) : Math.min(...scores.filter(s => s !== -Infinity));
+
+                // For numeric fields, find majority based on SCORES, not text
+                const scoreCounts = {};
+                scores.forEach(s => {
+                    if (s !== -Infinity) {
+                        scoreCounts[s] = (scoreCounts[s] || 0) + 1;
+                    }
+                });
+
+                let majorityScore = null;
+                let maxScoreCount = 0;
+                for (const [score, count] of Object.entries(scoreCounts)) {
+                    if (count > maxScoreCount) {
+                        maxScoreCount = count;
+                        majorityScore = parseFloat(score);
+                    }
+                }
+
+                // Only apply outlier detection if there's a clear majority (count > 1)
+                const useMajorityFiltering = maxScoreCount > 1;
 
                 // Calculate gradient color for each cell
                 dataCells.forEach((cell, index) => {
                     const parsed = parsedValues[index];
+                    const normalized = normalizedTexts[index];
 
                     // Empty/missing values get marked as differs
                     if (!parsed || parsed.text === '' || parsed.text === '-') {
@@ -552,42 +720,79 @@ function analyzeTable() {
                     if (parsed.isNumeric) {
                         const score = parsed.score;
 
+                        // Only check if outlier when there's a clear majority
+                        if (useMajorityFiltering) {
+                            const isOutlier = score !== majorityScore;
+                            if (!isOutlier) {
+                                // Don't highlight majority values
+                                return;
+                            }
+                        }
+
                         if (score === maxScore) {
                             // Best value - green
                             cell.setAttribute('data-best', 'true');
-                            cell.setAttribute('data-gradient', 'best');
+                            cell.setAttribute('data-gradient', 'custom');
+                            cell.setAttribute('data-bg-color', 'rgba(184, 243, 184, 0.5)');
+                            cell.setAttribute('data-border-color', '3px solid #28a745');
+                            cell.setAttribute('data-font-weight', '700');
                         } else if (maxScore === minScore) {
                             // All values are the same (edge case)
                             cell.setAttribute('data-differs', 'true');
-                            cell.setAttribute('data-gradient', 'middle');
+                            cell.setAttribute('data-gradient', 'custom');
+                            cell.setAttribute('data-bg-color', 'rgba(255, 249, 230, 0.5)');
+                            cell.setAttribute('data-border-color', '3px solid #ffc107');
+                            cell.setAttribute('data-font-weight', '500');
                         } else {
-                            // Calculate gradient position (0 = worst/red, 1 = best/green)
+                            // Excel-style dynamic color gradient
                             const position = (score - minScore) / (maxScore - minScore);
 
-                            if (position >= 0.66) {
-                                cell.setAttribute('data-gradient', 'good');
-                            } else if (position >= 0.33) {
-                                cell.setAttribute('data-gradient', 'middle');
+                            // Interpolate colors: Red (0) -> Yellow (0.5) -> Green (1)
+                            let r, g, b;
+                            if (position < 0.5) {
+                                // Red to Yellow
+                                const t = position * 2; // 0 to 1
+                                r = 255;
+                                g = Math.round(100 + (255 - 100) * t);
+                                b = Math.round(100 + (150 - 100) * t);
                             } else {
-                                cell.setAttribute('data-gradient', 'poor');
+                                // Yellow to Green
+                                const t = (position - 0.5) * 2; // 0 to 1
+                                r = Math.round(255 - (255 - 150) * t);
+                                g = 255;
+                                b = Math.round(150 + (200 - 150) * t);
                             }
+
+                            // Subtle background color (40% opacity)
+                            cell.setAttribute('data-bg-color', `rgba(${r}, ${g}, ${b}, 0.4)`);
+
+                            // Border color based on position
+                            const borderR = Math.round(r * 0.7);
+                            const borderG = Math.round(g * 0.7);
+                            const borderB = Math.round(b * 0.7);
+                            cell.setAttribute('data-border-color', `3px solid rgb(${borderR}, ${borderG}, ${borderB})`);
+                            cell.setAttribute('data-font-weight', position > 0.7 ? '600' : '500');
+
+                            cell.setAttribute('data-gradient', 'custom');
                             cell.setAttribute('data-differs', 'true');
                         }
                     } else {
                         cell.setAttribute('data-differs', 'true');
-                        cell.setAttribute('data-gradient', 'middle');
+                        cell.setAttribute('data-gradient', 'custom');
                     }
                 });
             } else {
-                // Non-numeric: mark different values (including empty)
-                const referenceValue = normalizedTexts[0];
+                // Non-numeric: mark different values (outliers only)
                 dataCells.forEach((cell, index) => {
-                    if (normalizedTexts[index] !== referenceValue) {
+                    const normalized = normalizedTexts[index];
+                    const isOutlier = normalized !== majorityValue;
+
+                    if (isOutlier) {
                         cell.setAttribute('data-differs', 'true');
                         if (normalizedTexts[index] === '___EMPTY___') {
                             cell.setAttribute('data-gradient', 'missing');
                         } else {
-                            cell.setAttribute('data-gradient', 'middle');
+                            cell.setAttribute('data-gradient', 'custom');
                         }
                     }
                 });
@@ -643,10 +848,30 @@ function updateVisibility() {
 function updateHighlights() {
     const highlightDiffToggle = document.getElementById('highlightDiffToggle');
     const table = document.getElementById('compareTable');
+    const tbody = table.querySelector('tbody');
+    const cells = tbody.querySelectorAll('td');
 
     if (highlightDiffToggle.checked) {
         table.classList.add('highlight-diffs');
+
+        // Apply stored color data to cells
+        cells.forEach(cell => {
+            const bgColor = cell.getAttribute('data-bg-color');
+            const borderColor = cell.getAttribute('data-border-color');
+            const fontWeight = cell.getAttribute('data-font-weight');
+
+            if (bgColor) cell.style.backgroundColor = bgColor;
+            if (borderColor) cell.style.borderLeft = borderColor;
+            if (fontWeight) cell.style.fontWeight = fontWeight;
+        });
     } else {
         table.classList.remove('highlight-diffs');
+
+        // Clear all inline styles
+        cells.forEach(cell => {
+            cell.style.backgroundColor = '';
+            cell.style.borderLeft = '';
+            cell.style.fontWeight = '';
+        });
     }
 }

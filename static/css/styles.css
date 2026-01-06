@@ -102,23 +102,6 @@ table.no-highlight td.table-warning {
 
 /* 4. Comparison View Toggles */
 
-/* Highlight cells that are the BEST (highest number, best config) */
-.highlight-diffs td[data-best="true"] {
-    background-color: #d1e7dd !important;
-    /* Light green */
-    border-left: 3px solid #198754 !important;
-    /* Green accent */
-    font-weight: 600;
-}
-
-/* Highlight cells that differ but aren't the best */
-.highlight-diffs td[data-differs="true"] {
-    background-color: #fff3cd !important;
-    /* Light yellow */
-    border-left: 3px solid #ffc107 !important;
-    /* Gold accent */
-    font-weight: 500;
-}
 
 /* Add subtle animation when highlighting is toggled */
 .highlight-diffs td[data-best="true"],
@@ -140,6 +123,7 @@ table.no-highlight td.table-warning {
     cursor: pointer;
     user-select: none;
 }
+
 /* 5. Subsection Collapse Animations */
 
 /* Smooth transitions for row visibility */
@@ -209,6 +193,7 @@ tr[data-collapsed="true"] i {
     display: inline-block;
     transition: all 0.3s ease;
 }
+
 /* Animation Classes */
 
 /* Row folding animation */
@@ -269,53 +254,31 @@ tr[data-collapsed="true"] i {
     font-style: normal;
     display: inline-block;
 }
-.usb-20 { color: #212529 !important; } /* Dark/Black */
-.usb-30, .usb-5g { color: #0d6efd !important; } /* Bootstrap Primary Blue */
-.usb-10g { color: #20c997 !important; } /* Teal */
-.usb-20g { color: #fd7e14 !important; } /* Orange */
-.usb-40g, .usb-tb { color: #dc3545 !important; } /* Red */
 
-/* Gradient highlighting for diff mode */
-.highlight-diffs td[data-gradient="best"] {
-    background: linear-gradient(135deg, #d1ffd1 0%, #c8f7dc 100%) !important;
-    border-left: 3px solid #28a745 !important;
-    font-weight: 600;
+.usb-20 {
+    color: #212529 !important;
 }
 
-.highlight-diffs td[data-gradient="good"] {
-    background: linear-gradient(135deg, #e0ffe0 0%, #d4f4dd 100%) !important;
-    border-left: 3px solid #5cb85c !important;
-    font-weight: 500;
+/* Dark/Black */
+.usb-30,
+.usb-5g {
+    color: #0d6efd !important;
 }
 
-.highlight-diffs td[data-gradient="middle"] {
-    background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%) !important;
-    border-left: 3px solid #ffc107 !important;
-    font-weight: 500;
+/* Bootstrap Primary Blue */
+.usb-10g {
+    color: #20c997 !important;
 }
 
-.highlight-diffs td[data-gradient="poor"] {
-    background: linear-gradient(135deg, #ffe6e6 0%, #ffdddd 100%) !important;
-    border-left: 3px solid #ff6b6b !important;
-    font-weight: 500;
+/* Teal */
+.usb-20g {
+    color: #fd7e14 !important;
 }
 
-.highlight-diffs td[data-gradient="missing"] {
-    background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%) !important;
-    border-left: 3px solid #999 !important;
-    font-style: italic;
-    opacity: 0.7;
+/* Orange */
+.usb-40g,
+.usb-tb {
+    color: #dc3545 !important;
 }
 
-/* Legacy support for data-best/data-differs (fallback) */
-.highlight-diffs td[data-best="true"]:not([data-gradient]) {
-    background-color: #d1e7dd !important;
-    border-left: 3px solid #198754 !important;
-    font-weight: 600;
-}
-
-.highlight-diffs td[data-differs="true"]:not([data-gradient]) {
-    background-color: #fff3cd !important;
-    border-left: 3px solid #ffc107 !important;
-    font-weight: 500;
-}
+/* Red */
