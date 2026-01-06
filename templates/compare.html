@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Sticky Header Logic */
+    /* Ensure the table responsive container allows vertical overflow so headers stick to the viewport */
+    .table-responsive {
+        overflow-y: visible !important;
+        overflow-x: auto !important;
+    }
+
+    /* Toolbar Stickiness */
+    .sticky-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 1040;
+        /* Higher than headers */
+        background: rgba(255, 255, 255, 0.95);
+        border-bottom: 1px solid #dee2e6;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0 !important;
+    }
+
+    /* Table Header Stickiness */
+    .sticky-header th {
+        position: sticky;
+        top: 45px;
+        /* Adjust based on toolbar height */
+        z-index: 1020;
+        background-color: #343a40 !important;
+        /* Ensure opacity */
+        color: white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        background-clip: padding-box;
+        /* Fix border rendering */
+    }
+
+    /* Hide Identical Logic via class */
+    .hide-identical .leaf-row:not(.table-warning) {
+        display: none !important;
+    }
+
+    /* Highlight Diff Logic: Toggle off styling */
+    table.no-highlight .table-warning {
+        --bs-table-bg: transparent !important;
+        background-color: transparent !important;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Comparison</h1>
+    <div class="btn-group">
+        <a href="/" class="btn btn-outline-secondary">Back to List</a>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <!-- Sticky Toolbar inside the scroll container context (or above it) -->
+    <!-- Placing it inside ensures it aligns with table width but might scroll away if not handled. 
+         With overflow-y: visible, it sticks to viewport. -->
+    <div class="sticky-toolbar d-flex gap-2 align-items-center mb-2 px-1">
+        <button class="btn btn-sm btn-outline-primary" onclick="expandAll()">Expand All</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="collapseAll()">Collapse All</button>
+        <div class="vr"></div>
+        <button class="btn btn-sm btn-outline-danger" id="btn-highlight" onclick="toggleHighlight()">Highlight Diff:
+            ON</button>
+        <button class="btn btn-sm btn-outline-dark" id="btn-hide-identical" onclick="toggleHideIdentical()">Hide
+            Identical: OFF</button>
+    </div>
+
+    <table class="table table-bordered table-striped" id="compareTable">
+        <thead class="table-dark sticky-header">
+            <tr>
+                <th style="min-width: 200px;">Feature</th>
+                {% for m in mobos %}
+                <th style="min-width: 250px;">
+                    {{ m.get('Brand', '') }}<br>
+                    <span class="fs-5">{{ m.get('Model', '') }}</span>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {# Helper macro for leaf row #}
+            {% macro render_row(key, label, level, parent_id, path_id) %}
+            {% set values = [] %}
+            {% for m in mobos %}
+            {# Use format_val from context #}
+            {% set val = format_val(m.get(key, '')) %}
+            {% set _ = values.append(val) %}
+            {% endfor %}
+
+            {# Check if values differ using robust unique check #}
+            {# Convert to string to ensure comparision works (though format_val returns str) #}
+            {% set unique_values = values | unique | list %}
+            {% set is_diff = unique_values | length > 1 %}
+
+            {# Add 'diff-row' class if different, for easy JS selection #}
+            <tr class="leaf-row {{ 'table-warning' if is_diff else '' }} {{ 'diff-row' if is_diff else 'identical-row' }} {{ parent_id }}"
+                data-parent="{{ parent_id }}" data-id="{{ path_id }}">
+                {# Create indent based on level #}
+                <td class="text-wrap" style="padding-left: {{ level * 20 }}px;">
+                    {% if level > 0 %}<span class="text-muted me-1">↳</span>{% endif %}
+                    {{ label }}
+                </td>
+                {% for val in values %}
+                <td class="text-wrap">
+                    {% if val.startswith('http') and ('.png' in val.lower() or '.jpg' in val.lower() or '.jpeg' in
+                    val.lower() or '.webp' in val.lower()) %}
+                    <a href="{{ val }}" target="_blank">
+                        <img src="{{ val }}" class="img-fluid" style="max-height: 150px; mix-blend-mode: multiply;"
+                            alt="Image">
+                    </a>
+                    {% elif val.startswith('http') %}
+                    <a href="{{ val }}" target="_blank">Link</a>
+                    {% else %}
+                    {{ val }}
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endmacro %}
+
+            {# Recursive macro for nodes #}
+            {% macro render_node(node, level, parent_id, parent_path) %}
+            {# Generate stable ID based on path #}
+            {% set current_path = parent_path ~ '/' ~ node.name if parent_path else node.name %}
+            {# Sanitize for HTML ID #}
+            {% set unique_id = 'node_' ~ (current_path | replace(' ', '_') | replace('/', '_') | replace(',', '_') |
+            replace('.', '_') | replace('(', '') | replace(')', '') | replace('+', '_')) %}
+
+            {% if node.children %}
+            {# It is a Category / Parent #}
+            {# Row 1: Main Header (Expanded View) #}
+            <tr id="header_{{ unique_id }}"
+                class="{{ 'table-dark category-header' if level == 0 else 'table-secondary sub-category-header' }} clickable {{ parent_id }}"
+                data-parent="{{ parent_id }}" data-id="{{ unique_id }}" onclick="toggleNode('{{ unique_id }}')">
+                {# Header Cell #}
+                <th colspan="{{ mobos|length + 1 }}" class="{{ 'ps-2' if level == 0 else '' }}"
+                    style="padding-left: {{ level * 20 }}px; cursor: pointer;">
+                    {# Fixed width icon container #}
+                    <span style="display: inline-block; width: 1.5rem; text-align: center;">
+                        <i class="bi bi-caret-down-fill" id="icon_{{ unique_id }}"></i>
+                    </span>
+                    {{ node.name }}
+                </th>
+            </tr>
+
+            {# Row 2: Summary Header (Collapsed View) #}
+            {% if node.summary_key %}
+            <tr id="summary_{{ unique_id }}"
+                class="{{ 'table-dark' if level == 0 else 'table-secondary' }} clickable {{ parent_id }}"
+                data-parent="{{ parent_id }}" data-id="{{ unique_id }}" style="display: none;"
+                onclick="toggleNode('{{ unique_id }}')">
+                {# Label Column #}
+                <th class="ps-2" style="padding-left: {{ level * 20 }}px; cursor: pointer;">
+                    {# Icon Container #}
+                    <span style="display: inline-block; width: 1.5rem; text-align: center;">
+                        <i class="bi bi-caret-right-fill"></i>
+                    </span>
+                    {{ node.name }}
+                </th>
+                {# Data Columns #}
+                {% for m in mobos %}
+                {% set val = format_val(m.get(node.summary_key, '')) %}
+                <td>
+                    {% if node.summary_label %}
+                    <span class="text-secondary small me-1" style="font-weight: 600;">{{ node.summary_label }}:</span>
+                    {% endif %}
+                    {{ val }}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endif %}
+
+            {% for child in node.children %}
+            {{ render_node(child, level + 1, unique_id, current_path) }}
+            {% endfor %}
+            {% else %}
+            {# It is a Leaf with a key #}
+            {{ render_row(node.key, node.name, level, parent_id, unique_id) }}
+            {% endif %}
+            {% endmacro %}
+
+            {# Iterate through Structure #}
+            {% for item in structure %}
+            {{ render_node(item, 0, 'root', '') }}
+            {% endfor %}
+
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // State: Set of COLLAPSED Node IDs
+    const collapsedNodes = new Set();
+    const childrenMap = {};
+
+    // Feature Toggle States
+    let hideIdentical = false;
+    let highlightDiff = true;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Build children map
+        document.querySelectorAll('tr[data-parent]').forEach(tr => {
+            const pid = tr.getAttribute('data-parent');
+            if (pid) {
+                if (!childrenMap[pid]) childrenMap[pid] = [];
+                childrenMap[pid].push(tr);
+            }
+        });
+    });
+
+    function toggleHighlight() {
+        highlightDiff = !highlightDiff;
+        const btn = document.getElementById('btn-highlight');
+
+        if (highlightDiff) {
+            btn.textContent = "Highlight Diff: ON";
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-outline-danger');
+            document.getElementById('compareTable').classList.remove('no-highlight');
+        } else {
+            btn.textContent = "Highlight Diff: OFF";
+            btn.classList.remove('btn-outline-danger');
+            btn.classList.add('btn-outline-secondary');
+            document.getElementById('compareTable').classList.add('no-highlight');
+        }
+    }
+
+    function toggleHideIdentical() {
+        hideIdentical = !hideIdentical;
+        const btn = document.getElementById('btn-hide-identical');
+        const table = document.getElementById('compareTable');
+
+        if (hideIdentical) {
+            btn.textContent = "Hide Identical: ON";
+            btn.classList.remove('btn-outline-dark');
+            btn.classList.add('btn-dark');
+            table.classList.add('hide-identical');
+        } else {
+            btn.textContent = "Hide Identical: OFF";
+            btn.classList.remove('btn-dark');
+            btn.classList.add('btn-outline-dark');
+            table.classList.remove('hide-identical');
+        }
+    }
+
+    function toggleNode(nodeId) {
+        if (collapsedNodes.has(nodeId)) {
+            collapsedNodes.delete(nodeId);
+        } else {
+            collapsedNodes.add(nodeId);
+        }
+        updateVisibility();
+    }
+
+    function expandAll() {
+        collapsedNodes.clear();
+        updateVisibility();
+    }
+
+    function collapseAll() {
+        // Collapse all Headers
+        document.querySelectorAll('[data-id]').forEach(el => {
+            if (el.id.startsWith('header_')) {
+                const id = el.getAttribute('data-id');
+                collapsedNodes.add(id);
+            }
+        });
+        updateVisibility();
+    }
+
+    function updateVisibility() {
+        // Roots are in childrenMap['root']
+        const roots = childrenMap['root'] || [];
+        roots.forEach(r => {
+            const id = r.getAttribute('data-id');
+            if (r.id.startsWith('header_')) {
+                processNode(id, false);
+            }
+        });
+    }
+
+    function processNode(nodeId, hiddenByAncestor) {
+        const isCollapsed = collapsedNodes.has(nodeId);
+
+        const headerRow = document.getElementById('header_' + nodeId);
+        const summaryRow = document.getElementById('summary_' + nodeId);
+
+        if (hiddenByAncestor) {
+            if (headerRow) headerRow.style.display = 'none';
+            if (summaryRow) summaryRow.style.display = 'none';
+
+            // Hide children RECURSIVELY
+            const children = childrenMap[nodeId] || [];
+            children.forEach(childRow => {
+                // SKIP Summary rows in general loop
+                if (childRow.id.startsWith('summary_')) return;
+
+                const childId = childRow.getAttribute('data-id');
+                if (childId && childRow.id.startsWith('header_')) {
+                    processNode(childId, true);
+                } else {
+                    childRow.style.display = 'none';
+                }
+            });
+        } else {
+            // Visible
+            if (isCollapsed) {
+                // Collapsed state
+                if (summaryRow) {
+                    if (headerRow) headerRow.style.display = 'none';
+                    summaryRow.style.display = '';
+                } else {
+                    if (headerRow) {
+                        headerRow.style.display = '';
+                        // Update Icon within the Span
+                        const icon = headerRow.querySelector('i');
+                        if (icon) { icon.classList.remove('bi-caret-down-fill'); icon.classList.add('bi-caret-right-fill'); }
+                    }
+                }
+
+                // Hide Children RECURSIVELY
+                const children = childrenMap[nodeId] || [];
+                children.forEach(childRow => {
+                    // SKIP Summary rows
+                    if (childRow.id.startsWith('summary_')) return;
+
+                    const childId = childRow.getAttribute('data-id');
+                    if (childId && childRow.id.startsWith('header_')) {
+                        processNode(childId, true);
+                    } else {
+                        childRow.style.display = 'none';
+                    }
+                });
+
+            } else {
+                // Expanded state
+                if (headerRow) {
+                    headerRow.style.display = '';
+                    const icon = headerRow.querySelector('i');
+                    if (icon) { icon.classList.remove('bi-caret-right-fill'); icon.classList.add('bi-caret-down-fill'); }
+                }
+                if (summaryRow) summaryRow.style.display = 'none';
+
+                // Show Children RECURSIVELY (Expand)
+                const children = childrenMap[nodeId] || [];
+                children.forEach(childRow => {
+                    // SKIP Summary rows
+                    if (childRow.id.startsWith('summary_')) return;
+
+                    const childId = childRow.getAttribute('data-id');
+                    if (childId && childRow.id.startsWith('header_')) {
+                        processNode(childId, false);
+                    } else {
+                        childRow.style.display = '';
+                    }
+                });
+            }
+        }
+    }
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+{% endblock %}
