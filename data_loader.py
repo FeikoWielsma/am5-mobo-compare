@@ -169,6 +169,7 @@ def load_data():
                         p_norm = p.strip()
                         if not p_norm: continue
                         if "Use the tabs" in p_norm: continue
+                        if "Missing/incorrect information" in p_norm: continue
                         if p_norm != last_p:
                             clean_parents.append(p_norm)
                             last_p = p_norm
@@ -186,7 +187,7 @@ def load_data():
                     full_path_list = clean_parents + [leaf_val]
                     full_key = "|".join(full_path_list)
                     
-                    # Special Case: 'Brand', 'Model' should be strictly those keys
+                    # Special Case: 'Brand', 'Model', 'Chipset' should be strictly those keys
                     if full_key in ['Brand', 'Model', 'Chipset']:
                         pass 
                     elif leaf_val in ['Brand', 'Model', 'Chipset']:
@@ -205,21 +206,36 @@ def load_data():
                     })
                 return cols_info
 
-            # Assuming headers are roughly rows anchor+1 to anchor+1 (simple) 
-            # OR we scan until we hit data?
-            # In this sheet, there are often 2-3 header rows. 
-            # Using the previous logic, we identified 'Brand' row. 
-            # Rows ABOVE 'Brand' might be super-headers? 
-            # Actually, standard format is: 
-            # Row X: Category (Rear I/O)
             # Row X+1: SubCat (USB)
             # Row X+2: Leaf (Type A) -> Anchor Row?
             # Let's assume Anchor Row is the LEAF row (contains Brand/Model).
             # So we look UP from anchor row specifically.
             
-            # Let's look 4 rows up from anchor row
-            start_scan_row = max(1, anchor_row_idx - 4)
-            sheet_cols = parse_complex_headers(ws, start_scan_row, anchor_row_idx + 1)
+            # Determine Header Bottom (End Row)
+            # "Brand" might be top of a merged cell (e.g. Rows 2-4). We need to read until 4.
+            anchor_row_num = anchor_row_idx + 1
+            header_end_row = anchor_row_num
+            
+            # Find the "Brand" cell to check merge
+            brand_col_idx = -1
+            for idx, val in enumerate(data_rows[anchor_row_idx]):
+                 if val == "Brand":
+                     brand_col_idx = idx + 1 # 1-based col
+                     break
+            
+            if brand_col_idx != -1:
+                # Check merges
+                for mr in ws.merged_cells.ranges:
+                    if (mr.min_row <= anchor_row_num <= mr.max_row) and \
+                       (mr.min_col <= brand_col_idx <= mr.max_col):
+                        header_end_row = mr.max_row
+                        break
+            
+            # Let's look 12 rows up from anchor row to be safe
+            start_scan_row = max(1, anchor_row_num - 12)
+            sheet_cols = parse_complex_headers(ws, start_scan_row, header_end_row)
+            
+            print(f"  Header Block detected: Rows {start_scan_row}-{header_end_row} (Anchor at {anchor_row_num})")
             
             # Filter cols that are practically empty or junk
             valid_cols = []
@@ -233,11 +249,8 @@ def load_data():
                  structure_built = True
 
             # --- PARSE DATA ---
-            # Data starts after the leaf header row (anchor_row_idx + 1 is leaf row index 1-based?)
-            # Wait, `parse_complex_headers` assumed end_row is leaf.
-            # So data starts at anchor_row_idx + 2
-            
-            data_start_row = anchor_row_idx + 2
+            # Data starts after the leaf header row
+            data_start_row = header_end_row + 1
             
             # Use Pandas to read data efficiently, but we need mapping to our keys
             # Read all relevant columns

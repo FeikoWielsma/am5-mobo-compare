@@ -8,7 +8,7 @@
 </div>
 
 <div class="sticky-toolbar p-2 bg-light border-bottom">
-    <div class="fw-bold">Dynamic View (Excel Hierarchy)</div>
+    <div class="fw-bold">Comparison</div>
 </div>
 
 <div class="table-container">
@@ -21,85 +21,507 @@
                     <div>{{ m.brand }}</div>
                     <div class="fs-5">{{ m.model }}</div>
                     <span class="badge bg-secondary">{{ m.chipset }}</span>
+                    <span class="badge bg-secondary">{{ m.dot.form_factor }}</span>
+
+                    {# Image View Link #}
+                    {% if m.dot.rear_io_image.view %}
+                    <div class="mt-2"><a href="{{ m.dot.rear_io_image.view }}" target="_blank"
+                            class="small text-light text-decoration-underline">View Image</a></div>
+                    {% endif %}
                 </th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
 
-            {# Recursive Macro to Render Tree #}
-            {% macro render_tree(nodes, parent_path=[]) %}
-            {% for node in nodes %}
-            {# Check if Node has Children (Category) or is Leaf (Feature) #}
-            {% if node.children %}
-            {# Render Category Header #}
-            {# Optimization: Only show header if it's top level or significant?
-            For strict hierarchy, let's treat top-level as Section Header (Gray)
-            and nested levels as indented row headers? #}
-
-            {% if parent_path|length == 0 %}
+            <!-- GENERAL -->
             <tr class="table-secondary">
-                <th colspan="{{ mobos|length + 1 }}">{{ node.name }}</th>
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">General</th>
             </tr>
-            {{ render_tree(node.children, parent_path + [node.name]) }}
-            {% else %}
-            {# It's a sub-category. Maybe just recurse.
-            Or add a row indicating subcat?
-            User wants clean view.
-            Let's flatten visually: "Parent > Child" in the Feature column for intermediate nodes.
-            #}
-            {{ render_tree(node.children, parent_path + [node.name]) }}
-            {% endif %}
 
-            {% else %}
-            {# It's a LEAF. Render Data Row #}
+            <!-- Market -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Market</th>
+            </tr>
             <tr>
-                {# Feature Name: Indent based on depth or showing full path?
-                Simple indentation is cleaner. #}
-                <th style="padding-left: {{ (parent_path|length) * 20 }}px;">
-                    {% if parent_path|length > 1 %}
-                    <span class="text-muted small">{{ parent_path[-1] }} &rsaquo;</span>
-                    {% endif %}
-                    {{ node.name }}
-                </th>
+                <th class="ps-5">Price (MSRP)</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.market.amsrpusd }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Release</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.market.release }}</td> {% endfor %}
+            </tr>
 
-                {# Render Columns #}
+            <!-- Memory -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Memory</th>
+            </tr>
+            <tr>
+                <th class="ps-5">RAM Slots</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.memory.ram_slots }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">ECC Support</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.memory.ecc_support }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Max Capacity</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.memory.max_capacity }}</td> {% endfor %}
+            </tr>
+
+            <!-- Networking -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Networking</th>
+            </tr>
+            <tr>
+                <th class="ps-5">LAN Controller</th>
+                {% for m in mobos %} <td class="text-center small">{{ m.dot.general.networking.ethernet.lan }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">RJ-45 Ports</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.networking.ethernet.rj45 }}</td> {% endfor
+                %}
+            </tr>
+            <tr>
+                <th class="ps-5">Wireless</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.networking.wireless }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">M.2 Wifi Access</th>
+                {% for m in mobos %} <td class="text-center small">{{
+                    m.dot.general.networking.m2_wifi_slot_easily_accessible }}</td> {% endfor %}
+            </tr>
+
+            <!-- Audio -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Audio</th>
+            </tr>
+            <tr>
+                <th class="ps-5">Codec + DAC</th>
+                {% for m in mobos %} <td class="text-center fw-bold">{{ m.dot.general.audio.audio_codecdac }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Jacks</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.audio.audio_jacks }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">S/PDIF</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.audio.spdif }}</td> {% endfor %}
+            </tr>
+
+            <!-- Buttons -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Buttons</th>
+            </tr>
+            <tr>
+                <th class="ps-5">BIOS Flash</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.buttons.bios_flash }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Clear CMOS</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.buttons.clear_cmos }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Misc</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.buttons.misc }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Power</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.buttons.power }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Reset</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.buttons.reset }}</td> {% endfor %}
+            </tr>
+
+            <!-- Physical -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Physical</th>
+            </tr>
+            <tr>
+                <th class="ps-5">PCB Layers</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.physical.pcb_layers }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Backplate</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.physical.pcb_backplate }}</td> {% endfor
+                %}
+            </tr>
+            <tr>
+                <th class="ps-5">External BCLK</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.general.physical.external_bclk }}</td> {% endfor
+                %}
+            </tr>
+
+
+            <!-- POWER -->
+            <tr class="table-secondary">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Power</th>
+            </tr>
+
+            <!-- VRM Config -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">VRM Configuration</th>
+            </tr>
+            <tr>
+                <th class="ps-5">Phase Config</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.power.vrm_configuration.phase_config }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">VRM (VCore)</th>
+                {% for m in mobos %} <td class="text-center small">{{ m.dot.power.vrm_configuration.vrm_vcore }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">VRM Fans</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.power.vrm_configuration.vrm_pch_m2_fans }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Heatsink</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.power.vrm_configuration.mos_hs }}</td> {% endfor
+                %}
+            </tr>
+
+            <!-- Connectors -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Connectors</th>
+            </tr>
+            <tr>
+                <th class="ps-5">EPS 12V</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.power.connectors.eps12v_config }}</td> {% endfor
+                %}
+            </tr>
+            <tr>
+                <th class="ps-5">PCIe Power</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.power.connectors.pcie }}</td> {% endfor %}
+            </tr>
+
+
+            <!-- INTERNAL HEADERS -->
+            <tr class="table-secondary">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Internal Headers & Features</th>
+            </tr>
+
+            <!-- Fans & RGB -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Fans and RGB</th>
+            </tr>
+            <tr>
+                <th class="ps-5">Fan/Pump Headers</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.fans_and_rgb.fanpump_headers }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">RGB 12V (4-pin)</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.fans_and_rgb['4pin_rgb_12v'] }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">ARGB 5V (3-pin)</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.fans_and_rgb['3pin_argb_5v'] }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Super I/O</th>
+                {% for m in mobos %} <td class="text-center small">{{
+                    m.dot.internal_headers_features.fans_and_rgb.super_io_controllers }}</td> {% endfor %}
+            </tr>
+
+            <!-- Legacy -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Legacy</th>
+            </tr>
+            <tr>
+                <th class="ps-5">COM Header</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.internal_headers_features.legacy.com_header }}
+                </td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">LPT Header</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.internal_headers_features.legacy.lpt_header }}
+                </td> {% endfor %}
+            </tr>
+
+            <!-- Features -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Features</th>
+            </tr>
+            <tr>
+                <th class="ps-5">M.2 Heatsink Slots</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.features.m2_heatsink_slot_s }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">SPI TPM</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.internal_headers_features.features.spi_tpm_header
+                    }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">BIOS Chip</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.internal_headers_features.features.bios_chip }}
+                </td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">1st PCIe Release</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.features['1st_pcie_x16_release_feature'] }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Debug LED</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.internal_headers_features.features.debug_features
+                    }}</td> {% endfor %}
+            </tr>
+
+            <!-- USB/TB -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">USB / Thunderbolt</th>
+            </tr>
+            <tr>
+                <th class="ps-5">USB 2.0 Header</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.usbthunderbolt.usb_20_header }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">USB 3.0 Header</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.usbthunderbolt.usb_30_header }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">USB-C Header</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.usbthunderbolt.usbc_header }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">TB Header</th>
+                {% for m in mobos %} <td class="text-center">{{
+                    m.dot.internal_headers_features.usbthunderbolt.tb_header_appearance_varies }}</td> {% endfor %}
+            </tr>
+
+
+            <!-- REAR I/O -->
+            <tr class="table-secondary">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Rear I/O</th>
+            </tr>
+
+            <!-- Legacy -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Legacy</th>
+            </tr>
+            <tr>
+                <th class="ps-5">PS/2</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.legacy.ps2 }}</td> {% endfor %}
+            </tr>
+
+            <!-- USB -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">USB</th>
+            </tr>
+            <tr>
+                <th class="ps-5">Type A 2.0</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_a['20'] }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Type A 5Gbps</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_a['32g1_5gbps'] }}</td> {% endfor
+                %}
+            </tr>
+            <tr>
+                <th class="ps-5">Type A 10Gbps</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_a['32g2_10gbps'] }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Type A Total</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.usba_total }}</td> {% endfor %}
+            </tr>
+
+            <tr>
+                <th class="ps-5">Type C 5Gbps</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_c['32g1_5gbps'] }}</td> {% endfor
+                %}
+            </tr>
+            <tr>
+                <th class="ps-5">Type C 10Gbps</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_c['32g2_10gbps'] }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Type C 20Gbps</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_c['32g2x2_20gbps'] }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">USB4 40Gbps</th>
+                {% for m in mobos %} <td class="text-center text-primary fw-bold">{{
+                    m.dot.rear_io.usb.type_c.usb4_40gbps }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Type C Total</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.usbc_total }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Total USB</th>
+                {% for m in mobos %} <td class="text-center fw-bold">{{ m.dot.rear_io.usb.total_usb }}</td> {% endfor %}
+            </tr>
+
+
+            <!-- VIDEO OUTS -->
+            <tr class="table-secondary">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Video Outputs</th>
+            </tr>
+
+            <!-- Modern -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Modern</th>
+            </tr>
+            <tr>
+                <th class="ps-5">Internal</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.video_outs.modern.internal }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">USB-C (DP Alt)</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.video_outs.modern.usbc_dp_altmode }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">HDMI</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.video_outs.modern.hdmi }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">DisplayPort</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.video_outs.modern.dp }}</td> {% endfor %}
+            </tr>
+
+
+            <!-- EXPANSION -->
+            <tr class="table-secondary">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Expansion</th>
+            </tr>
+
+            <!-- PCIe Slots -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">PCIe Slots</th>
+            </tr>
+            <tr>
+                <th class="ps-5">x16 Electrical</th>
+                {% for m in mobos %} <td class="text-center small">{{
+                    m.dot.expansion.pcie_slots.physical_x16.electrical_lanes }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">x16 Total</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.pcie_slots.physical_x16.total }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">x1/x4 Electrical</th>
+                {% for m in mobos %} <td class="text-center small">{{
+                    m.dot.expansion.pcie_slots.physical_x1x4.electrical_lanes }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">x1/x4 Total</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.pcie_slots.physical_x1x4.total }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Total Slots</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.pcie_slots.total_slot_count }}</td> {%
+                endfor %}
+            </tr>
+
+            <!-- Storage -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Storage</th>
+            </tr>
+            <tr>
+                <th class="ps-5">SATA</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.sata }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">M.2 Gen 5</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.pcie_storage.m2_m }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">Total M.2</th>
+                {% for m in mobos %} <td class="text-center fw-bold">{{ m.dot.expansion.storage.pcie_storage.total_m2 }}
+                </td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">AIC</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.pcie_storage.aic }}</td> {%
+                endfor %}
+            </tr>
+            <tr>
+                <th class="ps-5">SlimSAS</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.pcie_storage.slimsas }}</td> {%
+                endfor %}
+            </tr>
+
+            <!-- LINKS -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Links</th>
+            </tr>
+            <tr>
+                <th class="ps-4">Website</th>
                 {% for m in mobos %}
                 <td class="text-center">
-                    {# Fetch value using logic in macro or jinja context?
-                    m.specs is huge nested dict.
-                    We need to traverse it using keys in parent_path + [node.name].
-                    But wait, unflattening logic used strict keys.
-                    Ideally, we stored the 'key' (pipe delimited) in the node structure?
-                    Yes, build_header_tree in dataloader assigns 'key' to leaf nodes.
-                    #}
-
-                    {# Helper to resolve nested dict by list of keys #}
-                    {% set ns = namespace(current=m.specs) %}
-                    {% for part in parent_path %}
-                    {% if ns.current and part in ns.current %}
-                    {% set ns.current = ns.current[part] %}
-                    {% else %}
-                    {% set ns.current = {} %}
-                    {% endif %}
-                    {% endfor %}
-
-                    {# Final Access #}
-                    {% if ns.current and node.name in ns.current %}
-                    {# Value found #}
-                    {{ ns.current[node.name] }}
-                    {% else %}
-                    <span class="text-muted small">-</span>
+                    {% if m.dot.links.website %}
+                    <a href="{{ m.dot.links.website }}" target="_blank">Official Page</a>
                     {% endif %}
                 </td>
                 {% endfor %}
             </tr>
-            {% endif %}
-            {% endfor %}
-            {% endmacro %}
 
-            {# Start Rendering with Root Nodes #}
-            {{ render_tree(structure) }}
+            <!-- COLORS -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Colors</th>
+            </tr>
+            <tr>
+                <th class="ps-4">Heatsink Primary</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.color.heatsink.primary }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-4">Heatsink Accent</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.color.heatsink.textaccent }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-4">PCB Accent</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.color.pcb.accent }}</td> {% endfor %}
+            </tr>
+            <tr>
+                <th class="ps-4">PCB Primary</th>
+                {% for m in mobos %} <td class="text-center">{{ m.dot.color.pcb.primary }}</td> {% endfor %}
+            </tr>
+
+            <!-- IMAGE -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Image</th>
+            </tr>
+            <tr>
+                <th class="ps-4">View</th>
+                {% for m in mobos %}
+                <td class="text-center">
+                    {% if m.dot.rear_io_image.view %}
+                    <a href="{{ m.dot.rear_io_image.view }}" target="_blank">View Image</a>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+
+            <!-- NOTES -->
+            <tr class="table-light">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Notes</th>
+            </tr>
+            <tr>
+                <th class="ps-4">Details</th>
+                {% for m in mobos %} <td class="text-center small text-muted">{{ m.dot.notes.details }}</td> {% endfor
+                %}
+            </tr>
+
 
         </tbody>
     </table>
