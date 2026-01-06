@@ -141,7 +141,7 @@ def build_header_tree(columns_info):
 
 def clean_record_values(record):
     """
-    Clean all values in a record (remove newlines, strip whitespace).
+    Clean all values in a record (remove newlines, strip whitespace, convert floats to ints where appropriate).
     
     Args:
         record: Dict with string values
@@ -152,11 +152,21 @@ def clean_record_values(record):
     Examples:
         >>> clean_record_values({'A': '  foo\\nbar  ', 'B': 123})
         {'A': 'foo bar', 'B': '123'}
+        
+        >>> clean_record_values({'Total': 3.0, 'Model': 'X870E'})
+        {'Total': '3', 'Model': 'X870E'}
     """
     cleaned = {}
     for key, value in record.items():
         if value is None:
             cleaned[key] = ''
+        elif isinstance(value, float):
+            # Check if float is actually a whole number (3.0 -> 3)
+            if value == int(value):
+                cleaned[key] = str(int(value))
+            else:
+                # Keep decimal if it's meaningful (e.g., 3.5)
+                cleaned[key] = str(value).strip().replace('\n', ' ')
         else:
             # Convert to string, strip whitespace, replace newlines with spaces
             cleaned[key] = str(value).strip().replace('\n', ' ')

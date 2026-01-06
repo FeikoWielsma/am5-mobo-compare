@@ -100,33 +100,48 @@ def load_data():
                 final_header_tree = build_header_tree(valid_cols)
                 structure_built = True
             
-            # Step 5: Load data rows using pandas
-            data_start_row = end_row  # Pandas is 0-indexed, end_row is 1-indexed
-            df = pd.read_excel(
-                EXCEL_FILE,
-                sheet_name=sheet_name,
-                header=None,
-                skiprows=data_start_row
-            )
+            # Step 5: Load data rows using openpyxl (to capture comments)
+            data_start_row = end_row + 1  # Start reading data after header
+            records = []
             
-            # Select only the columns we parsed
-            cols_to_read = [col['col_idx'] for col in valid_cols]
-            try:
-                current_df = df.iloc[:, cols_to_read]
-            except IndexError:
-                print(f"  Warning: Column index error in '{sheet_name}', skipping")
-                continue
-            
-            # Assign column names
-            current_df.columns = [col['key'] for col in valid_cols]
-            
-            # Filter out empty rows (no Model)
-            if 'Model' in current_df.columns:
-                current_df = current_df.dropna(subset=['Model'])
-                current_df = current_df[current_df['Model'].astype(str).str.strip() != ""]
+            # Read rows directly from worksheet
+            for row_idx in range(data_start_row, ws.max_row + 1):
+                record = {}
+                has_model = False
+                
+                # Read each column's value and comment
+                for col_info in valid_cols:
+                    col_idx = col_info['col_idx'] + 1  # openpyxl uses 1-indexed columns
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    
+                    # Get cell value
+                    value = cell.value
+                    key = col_info['key']
+                    record[key] = value
+                    
+                    # Check if this is the Model column and has a value
+                    if key == 'Model' and value and str(value).strip():
+                        has_model = True
+                    
+                    # Extract comment if present
+                    if cell.comment:
+                        try:
+                            comment_text = cell.comment.text
+                            if comment_text:
+                                # Clean comment text (remove author prefix if present)
+                                comment_text = comment_text.strip()
+                                # Store comment with _comment suffix
+                                comment_key = f"{key}_comment"
+                                record[comment_key] = comment_text
+                        except Exception as e:
+                            # Silently skip if comment extraction fails
+                            pass
+                
+                # Only add record if it has a Model (skip empty rows)
+                if has_model:
+                    records.append(record)
             
             # Step 6: Process each motherboard record
-            records = current_df.to_dict('records')
             
             for idx, record in enumerate(records):
                 # Clean all values (strip, remove newlines, etc.)

@@ -10,6 +10,25 @@
 let collapsedSections = new Set();
 let collapsedSubsections = new Set();
 
+// Field-specific comparison rules
+const FIELD_RULES = {
+    // Lower is better
+    'lower_is_better': [
+        'amsrpusd',  // Price field
+    ],
+
+    // Custom rankings (best to worst) - exact text match
+    'custom_rank': {
+        'debug_led': {
+            'Debug LED': 10,
+            'POST code': 5,
+            'None': 0,
+            '-': 0,
+            '': 0
+        }
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     const hideSameToggle = document.getElementById('hideSameToggle');
     const highlightDiffToggle = document.getElementById('highlightDiffToggle');
@@ -48,6 +67,13 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleSubsection(subsection); // Animate toggle
         });
     });
+
+    // Initialize Bootstrap tooltips for comment indicators
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    [...tooltipTriggerList].map(el => new bootstrap.Tooltip(el, {
+        placement: 'top',
+        trigger: 'hover focus'
+    }));
 });
 
 /**
@@ -57,7 +83,7 @@ function loadCollapsedState() {
     try {
         const savedSections = localStorage.getItem('collapsedSections');
         const savedSubsections = localStorage.getItem('collapsedSubsections');
-        
+
         if (savedSections) collapsedSections = new Set(JSON.parse(savedSections));
         if (savedSubsections) collapsedSubsections = new Set(JSON.parse(savedSubsections));
     } catch (e) {
@@ -81,7 +107,7 @@ function toggleSection(sectionName) {
     } else {
         collapsedSections.add(sectionName);
     }
-    
+
     saveCollapsedState();
     applySectionCollapse(true); // Animate
     applySubsectionCollapse(false);
@@ -116,14 +142,14 @@ function toggleSubsection(subsectionId) {
 
     } else {
         // EXPANDING
-        
+
         // 1. Auto-expand Parent first
         const parentId = header.getAttribute('data-parent');
-        
+
         if (collapsedSections.has(parentId)) {
             collapsedSections.delete(parentId);
             saveCollapsedState();
-            applySectionCollapse(true); 
+            applySectionCollapse(true);
         }
 
         // 2. Find badge for Fly Back
@@ -131,11 +157,11 @@ function toggleSubsection(subsectionId) {
         const badge = parentBadgeContainer ? parentBadgeContainer.querySelector(`[data-subsection-id="${subsectionId}"]`) : null;
 
         if (badge) {
-             animateFlyBack(badge, header, () => {
-                 collapsedSubsections.delete(subsectionId);
-                 saveCollapsedState();
-                 applySubsectionCollapse(false);
-             });
+            animateFlyBack(badge, header, () => {
+                collapsedSubsections.delete(subsectionId);
+                saveCollapsedState();
+                applySubsectionCollapse(false);
+            });
         } else {
             collapsedSubsections.delete(subsectionId);
             saveCollapsedState();
@@ -161,7 +187,7 @@ function animateFold(headerRow, callback) {
     });
 
     // Force reflow
-    void headerRow.offsetWidth; 
+    void headerRow.offsetWidth;
 
     // Add fold class to trigger CSS transition
     rowsToAnimate.forEach(row => {
@@ -185,11 +211,11 @@ function animateFold(headerRow, callback) {
 function animateFlyBadge(headerRow, subsectionId, startRect, callback) {
     // Determine subsection name for the badge
     const subsectionName = subsectionId.split('-').slice(1).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    
+
     const flyer = document.createElement('span');
     flyer.className = 'badge bg-secondary flying-badge';
     flyer.textContent = `+ ${subsectionName}`;
-    flyer.style.fontSize = '0.7em'; 
+    flyer.style.fontSize = '0.7em';
     flyer.style.position = 'fixed';
     flyer.style.zIndex = '9999';
     flyer.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
@@ -201,13 +227,13 @@ function animateFlyBadge(headerRow, subsectionId, startRect, callback) {
 
     flyer.style.top = `${startTop}px`;
     flyer.style.left = `${startLeft}px`;
-    
+
     document.body.appendChild(flyer);
 
     // Get Target position
     const parentId = headerRow.getAttribute('data-parent');
     const parentBadgeContainer = document.querySelector(`.collapsed-subsections-badge[data-parent="${parentId}"]`);
-    
+
     if (!parentBadgeContainer) {
         flyer.remove();
         if (callback) callback();
@@ -227,19 +253,19 @@ function animateFlyBadge(headerRow, subsectionId, startRect, callback) {
         // If empty, use Range API to measure text node
         const parentHeaderTh = parentBadgeContainer.closest('th');
         const icon = parentHeaderTh.querySelector('i');
-        
+
         if (icon && icon.nextSibling) {
             const range = document.createRange();
-            range.selectNode(icon.nextSibling); 
+            range.selectNode(icon.nextSibling);
             const textRect = range.getBoundingClientRect();
-            
-            targetLeft = textRect.right + 10; 
+
+            targetLeft = textRect.right + 10;
             targetTop = textRect.top + (textRect.height / 2) - 10;
-            
+
             if (targetLeft === 0 || textRect.width === 0) {
-                 const cRect = parentBadgeContainer.getBoundingClientRect();
-                 targetLeft = cRect.left;
-                 targetTop = cRect.top;
+                const cRect = parentBadgeContainer.getBoundingClientRect();
+                targetLeft = cRect.left;
+                targetTop = cRect.top;
             }
         } else {
             const cRect = parentBadgeContainer.getBoundingClientRect();
@@ -268,25 +294,25 @@ function animateFlyBadge(headerRow, subsectionId, startRect, callback) {
  */
 function animateFlyBack(badgeElement, headerRow, callback) {
     const sourceRect = badgeElement.getBoundingClientRect();
-    
+
     // Temporarily measure target
     headerRow.style.display = '';
     headerRow.style.visibility = 'hidden';
-    
+
     const titleCell = headerRow.querySelector('th');
     const targetRect = titleCell.getBoundingClientRect();
-    
+
     headerRow.style.display = 'none';
     headerRow.style.visibility = '';
 
     const flyer = badgeElement.cloneNode(true);
-    flyer.classList.remove('badge-pop-in'); 
+    flyer.classList.remove('badge-pop-in');
     flyer.classList.add('flying-badge');
     flyer.style.position = 'fixed';
     flyer.style.zIndex = '9999';
-    flyer.style.margin = '0'; 
-    flyer.style.transition = 'all 0.5s cubic-bezier(0.19, 1, 0.22, 1)'; 
-    
+    flyer.style.margin = '0';
+    flyer.style.transition = 'all 0.5s cubic-bezier(0.19, 1, 0.22, 1)';
+
     flyer.style.top = `${sourceRect.top}px`;
     flyer.style.left = `${sourceRect.left}px`;
     flyer.style.width = `${sourceRect.width}px`;
@@ -294,20 +320,20 @@ function animateFlyBack(badgeElement, headerRow, callback) {
     flyer.style.display = 'flex';
     flyer.style.alignItems = 'center';
     flyer.style.justifyContent = 'center';
-    
+
     document.body.appendChild(flyer);
-    
+
     badgeElement.style.opacity = '0';
 
     const targetTop = targetRect.top + (targetRect.height / 2) - (sourceRect.height / 2);
-    const targetLeft = targetRect.left + 30; 
+    const targetLeft = targetRect.left + 30;
 
     void flyer.offsetWidth;
 
     flyer.style.top = `${targetTop}px`;
     flyer.style.left = `${targetLeft}px`;
-    flyer.style.opacity = '0'; 
-    flyer.style.transform = 'scale(1.1)'; 
+    flyer.style.opacity = '0';
+    flyer.style.transform = 'scale(1.1)';
 
     setTimeout(() => {
         flyer.remove();
@@ -324,18 +350,18 @@ function applySectionCollapse(animate = false) {
         const section = header.getAttribute('data-section');
         const icon = header.querySelector('i');
         const isCollapsed = collapsedSections.has(section);
-        
+
         if (icon) {
             icon.className = isCollapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-down';
         }
-        
+
         let currentRow = header.nextElementSibling;
         while (currentRow && !currentRow.classList.contains('section-header')) {
             if (isCollapsed) {
                 currentRow.style.display = 'none';
             } else {
                 if (!currentRow.getAttribute('data-hidden-by-filter')) {
-                    currentRow.style.display = ''; 
+                    currentRow.style.display = '';
                 }
             }
             currentRow = currentRow.nextElementSibling;
@@ -351,11 +377,11 @@ function applySubsectionCollapse(animate = false) {
         const subsection = header.getAttribute('data-subsection');
         const icon = header.querySelector('i');
         const isCollapsed = collapsedSubsections.has(subsection);
-        
+
         if (icon) {
             icon.className = isCollapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-down';
         }
-        
+
         const parentSection = header.getAttribute('data-parent');
         const parentIsCollapsed = collapsedSections.has(parentSection);
 
@@ -363,16 +389,16 @@ function applySubsectionCollapse(animate = false) {
             // Keep hidden
         } else {
             if (isCollapsed) {
-               header.style.display = 'none'; 
-               
-               let next = header.nextElementSibling;
-               while (next && !next.classList.contains('subsection-header') && !next.classList.contains('section-header')) {
-                   next.style.display = 'none';
-                   next = next.nextElementSibling;
-               }
+                header.style.display = 'none';
+
+                let next = header.nextElementSibling;
+                while (next && !next.classList.contains('subsection-header') && !next.classList.contains('section-header')) {
+                    next.style.display = 'none';
+                    next = next.nextElementSibling;
+                }
             } else {
                 header.style.display = '';
-                
+
                 let next = header.nextElementSibling;
                 while (next && !next.classList.contains('subsection-header') && !next.classList.contains('section-header')) {
                     if (!next.getAttribute('data-hidden-by-filter')) {
@@ -383,7 +409,7 @@ function applySubsectionCollapse(animate = false) {
             }
         }
     });
-    
+
     updateParentSectionBadges();
 }
 
@@ -393,24 +419,24 @@ function applySubsectionCollapse(animate = false) {
 function updateParentSectionBadges() {
     document.querySelectorAll('.collapsed-subsections-badge').forEach(badgeContainer => {
         const parentSection = badgeContainer.getAttribute('data-parent');
-        
+
         const expectedSubsections = [...collapsedSubsections]
             .filter(sub => sub.startsWith(parentSection + '-'))
-            .sort(); 
+            .sort();
 
         const currentBadges = Array.from(badgeContainer.children);
-        
+
         currentBadges.forEach(badge => {
             const id = badge.getAttribute('data-subsection-id');
             if (!expectedSubsections.includes(id)) {
                 badge.remove();
             }
         });
-        
+
         expectedSubsections.forEach(subId => {
             if (!badgeContainer.querySelector(`[data-subsection-id="${subId}"]`)) {
                 const subsectionName = subId.split('-').slice(1).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                
+
                 const badge = document.createElement('span');
                 badge.className = 'badge bg-secondary subsection-badge ms-2';
                 badge.setAttribute('data-subsection-id', subId);
@@ -421,10 +447,10 @@ function updateParentSectionBadges() {
                 badge.classList.add('badge-pop-in');
 
                 badge.addEventListener('click', (e) => {
-                    e.stopPropagation(); 
+                    e.stopPropagation();
                     toggleSubsection(subId);
                 });
-                
+
                 badgeContainer.appendChild(badge);
             }
         });
@@ -436,23 +462,23 @@ function updateParentSectionBadges() {
  */
 function parseValue(text) {
     if (!text || text === '-' || text === '') return null;
-    
+
     const numbers = text.match(/\d+/g);
     if (!numbers) return { text, score: 0, isNumeric: false };
-    
+
     if (numbers.length === 1 && /^\d+$/.test(text.trim())) {
         return { text, score: parseInt(numbers[0]), isNumeric: true };
     }
-    
+
     if (/^\d+\+\d+/.test(text)) {
         const sum = numbers.reduce((a, b) => a + parseInt(b), 0);
         return { text, score: sum, isNumeric: true };
     }
-    
+
     if (/\d+x\d+/.test(text)) {
         return { text, score: parseInt(numbers[0]), isNumeric: true };
     }
-    
+
     if (/\d+\*\d+x\d+/.test(text)) {
         const matches = text.match(/(\d+)\*\d+x\d+/g);
         if (matches) {
@@ -463,12 +489,12 @@ function parseValue(text) {
             return { text, score: totalSlots, isNumeric: true };
         }
     }
-    
+
     return { text, score: parseInt(numbers[0]), isNumeric: numbers.length > 0 };
 }
 
 /**
- * Analyze table and mark rows/cells based on better/worse values
+ * Analyze table and mark rows/cells based on better/worse values with gradient coloring
  */
 function analyzeTable() {
     const table = document.getElementById('compareTable');
@@ -490,10 +516,12 @@ function analyzeTable() {
             cell: cell
         }));
 
-        const normalizedTexts = values.map(v => 
+        // Normalize: treat empty and '-' as distinct empty value (not ignored)
+        const normalizedTexts = values.map(v =>
             v.text === '' || v.text === '-' ? '___EMPTY___' : v.text
         );
 
+        // Check if all values are the same
         const allSame = normalizedTexts.every(v => v === normalizedTexts[0]);
 
         if (allSame) {
@@ -503,33 +531,64 @@ function analyzeTable() {
 
             const parsedValues = values.map(v => parseValue(v.text));
             const hasNumeric = parsedValues.some(pv => pv && pv.isNumeric);
-            
+
             if (hasNumeric) {
+                // Extract numeric scores (treat non-numeric as -Infinity)
                 const scores = parsedValues.map(pv => pv && pv.isNumeric ? pv.score : -Infinity);
                 const maxScore = Math.max(...scores);
-                
+                const minScore = Math.min(...scores.filter(s => s !== -Infinity));
+
+                // Calculate gradient color for each cell
                 dataCells.forEach((cell, index) => {
                     const parsed = parsedValues[index];
-                    
+
+                    // Empty/missing values get marked as differs
                     if (!parsed || parsed.text === '' || parsed.text === '-') {
+                        cell.setAttribute('data-differs', 'true');
+                        cell.setAttribute('data-gradient', 'missing');
                         return;
                     }
-                    
+
                     if (parsed.isNumeric) {
-                        if (parsed.score === maxScore) {
+                        const score = parsed.score;
+
+                        if (score === maxScore) {
+                            // Best value - green
                             cell.setAttribute('data-best', 'true');
+                            cell.setAttribute('data-gradient', 'best');
+                        } else if (maxScore === minScore) {
+                            // All values are the same (edge case)
+                            cell.setAttribute('data-differs', 'true');
+                            cell.setAttribute('data-gradient', 'middle');
                         } else {
+                            // Calculate gradient position (0 = worst/red, 1 = best/green)
+                            const position = (score - minScore) / (maxScore - minScore);
+
+                            if (position >= 0.66) {
+                                cell.setAttribute('data-gradient', 'good');
+                            } else if (position >= 0.33) {
+                                cell.setAttribute('data-gradient', 'middle');
+                            } else {
+                                cell.setAttribute('data-gradient', 'poor');
+                            }
                             cell.setAttribute('data-differs', 'true');
                         }
                     } else {
                         cell.setAttribute('data-differs', 'true');
+                        cell.setAttribute('data-gradient', 'middle');
                     }
                 });
             } else {
+                // Non-numeric: mark different values (including empty)
                 const referenceValue = normalizedTexts[0];
                 dataCells.forEach((cell, index) => {
                     if (normalizedTexts[index] !== referenceValue) {
                         cell.setAttribute('data-differs', 'true');
+                        if (normalizedTexts[index] === '___EMPTY___') {
+                            cell.setAttribute('data-gradient', 'missing');
+                        } else {
+                            cell.setAttribute('data-gradient', 'middle');
+                        }
                     }
                 });
             }
@@ -572,7 +631,7 @@ function updateVisibility() {
         tbody.querySelectorAll('tr').forEach(row => {
             row.removeAttribute('data-hidden-by-filter');
         });
-        
+
         applySectionCollapse();
         applySubsectionCollapse();
     }
