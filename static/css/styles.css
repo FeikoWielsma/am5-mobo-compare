@@ -209,3 +209,55 @@ tr[data-collapsed="true"] i {
     display: inline-block;
     transition: all 0.3s ease;
 }
+/* Animation Classes */
+
+/* Row folding animation */
+.row-fold-transition {
+    transition: all 0.3s ease-in-out;
+    transform-origin: top;
+    overflow: hidden;
+}
+
+.row-folded {
+    opacity: 0;
+    line-height: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom-width: 0 !important;
+    transform: scaleY(0);
+}
+
+/* Flying Badge */
+.flying-badge {
+    position: fixed;
+    z-index: 9999;
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Bouncy transition */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+}
+
+/* Subsection header transition */
+.subsection-header i {
+    transition: transform 0.3s ease;
+}
+
+.subsection-badge {
+    transition: all 0.3s ease;
+}
+
+.subsection-badge.badge-pop-in {
+    animation: badgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes badgePop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
