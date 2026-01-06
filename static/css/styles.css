@@ -99,3 +99,113 @@ table.no-highlight td.table-warning {
 .clickable:hover {
     opacity: 0.9;
 }
+
+/* 4. Comparison View Toggles */
+
+/* Highlight cells that are the BEST (highest number, best config) */
+.highlight-diffs td[data-best="true"] {
+    background-color: #d1e7dd !important;
+    /* Light green */
+    border-left: 3px solid #198754 !important;
+    /* Green accent */
+    font-weight: 600;
+}
+
+/* Highlight cells that differ but aren't the best */
+.highlight-diffs td[data-differs="true"] {
+    background-color: #fff3cd !important;
+    /* Light yellow */
+    border-left: 3px solid #ffc107 !important;
+    /* Gold accent */
+    font-weight: 500;
+}
+
+/* Add subtle animation when highlighting is toggled */
+.highlight-diffs td[data-best="true"],
+.highlight-diffs td[data-differs="true"] {
+    transition: background-color 0.2s ease, border-left 0.2s ease;
+}
+
+/* Ensure toggle switches are properly spaced */
+.d-flex.gap-3 {
+    gap: 1.5rem !important;
+}
+
+/* Make form switches slightly larger for better visibility */
+.form-check-input {
+    cursor: pointer;
+}
+
+.form-check-label {
+    cursor: pointer;
+    user-select: none;
+}
+/* 5. Subsection Collapse Animations */
+
+/* Smooth transitions for row visibility */
+tbody tr {
+    transition: opacity 0.3s ease, max-height 0.3s ease, transform 0.3s ease;
+    max-height: 1000px;
+    opacity: 1;
+}
+
+/* Hiding animation */
+tbody tr.collapsing {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transform: scaleY(0);
+    transform-origin: top;
+}
+
+/* Badge appearance animation */
+.subsection-badge {
+    animation: badgeAppear 0.4s ease-out;
+    display: inline-block;
+}
+
+@keyframes badgeAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.8);
+    }
+
+    60% {
+        transform: translateY(0px) scale(1.1);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0px) scale(1);
+    }
+}
+
+/* Badge hover effect */
+.subsection-badge:hover {
+    transform: scale(1.05);
+    background-color: #5a6268 !important;
+    transition: all 0.2s ease;
+}
+
+/* Subsection header hover effect */
+.subsection-header:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Icon rotation animation */
+.subsection-header i,
+.section-header i {
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+/* Collapsed state icon */
+tr[data-collapsed="true"] i {
+    transform: rotate(-90deg);
+}
+
+/* Badge container transition */
+.collapsed-subsections-badge {
+    display: inline-block;
+    transition: all 0.3s ease;
+}

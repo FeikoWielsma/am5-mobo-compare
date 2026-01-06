@@ -26,8 +26,18 @@ def get_service():
 @app.route('/')
 def index():
     service = get_service()
-    # View expects list of dicts (the 'data' column)
-    mobos = [m.data for m in service.get_all_mobos()]
+    # Build dict for template from Motherboard attributes
+    mobos = []
+    for m in service.get_all_mobos():
+        # Merge specs first, then override with authoritative identity fields
+        mobo_dict = {**m.specs}
+        mobo_dict.update({
+            'id': m.id,
+            'brand': m.brand,
+            'model': m.model,
+            'chipset': m.chipset
+        })
+        mobos.append(mobo_dict)
     return render_template('index.html', mobos=mobos)
 
 @app.route('/compare')
@@ -54,12 +64,11 @@ def api_mobos():
     mobos = service.get_all_mobos()
     
     def minimal(m):
-        d = m.data
         return {
-            'id': d.get('id'),
-            'Brand': d.get('Brand', ''),
-            'Model': d.get('Model', ''),
-            'Chipset': d.get('Chipset', '')
+            'id': m.id,
+            'Brand': m.brand,
+            'Model': m.model,
+            'Chipset': m.chipset
         }
     return jsonify([minimal(m) for m in mobos])
 

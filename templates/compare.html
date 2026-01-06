@@ -162,8 +162,10 @@
             </tr>
 
             <!-- VRM Config -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">VRM Configuration</th>
+            <tr class="table-light subsection-header" data-subsection="power-vrm" data-parent="power" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> VRM Configuration
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">Phase Config</th>
@@ -187,8 +189,10 @@
             </tr>
 
             <!-- Connectors -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Connectors</th>
+            <tr class="table-light subsection-header" data-subsection="power-connectors" data-parent="power" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Connectors
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">EPS 12V</th>
@@ -207,8 +211,10 @@
             </tr>
 
             <!-- Fans & RGB -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Fans and RGB</th>
+            <tr class="table-light subsection-header" data-subsection="internal-fans" data-parent="internal" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Fans and RGB
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">Fan/Pump Headers</th>
@@ -232,8 +238,10 @@
             </tr>
 
             <!-- Legacy -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Legacy</th>
+            <tr class="table-light subsection-header" data-subsection="internal-legacy" data-parent="internal" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Legacy
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">COM Header</th>
@@ -247,8 +255,10 @@
             </tr>
 
             <!-- Features -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Features</th>
+            <tr class="table-light subsection-header" data-subsection="internal-features" data-parent="internal" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Features
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">M.2 Heatsink Slots</th>
@@ -277,8 +287,10 @@
             </tr>
 
             <!-- USB/TB -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">USB / Thunderbolt</th>
+            <tr class="table-light subsection-header" data-subsection="internal-usb" data-parent="internal" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> USB / Thunderbolt
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">USB 2.0 Header</th>
@@ -308,8 +320,10 @@
             </tr>
 
             <!-- Legacy -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Legacy</th>
+            <tr class="table-light subsection-header" data-subsection="internal-legacy" data-parent="internal" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Legacy
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">PS/2</th>
@@ -317,8 +331,10 @@
             </tr>
 
             <!-- USB -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">USB</th>
+            <tr class="table-light subsection-header" data-subsection="rear-io-usb" data-parent="rear-io" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> USB
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">Type A 2.0</th>
@@ -375,8 +391,10 @@
             </tr>
 
             <!-- Modern -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Modern</th>
+            <tr class="table-light subsection-header" data-subsection="video-modern" data-parent="video" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Modern
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">Internal</th>
@@ -403,8 +421,10 @@
             </tr>
 
             <!-- PCIe Slots -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">PCIe Slots</th>
+            <tr class="table-light subsection-header" data-subsection="expansion-pcie" data-parent="expansion" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> PCIe Slots
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">x16 Electrical</th>
@@ -433,8 +453,10 @@
             </tr>
 
             <!-- Storage -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">Storage</th>
+            <tr class="table-light subsection-header" data-subsection="expansion-storage" data-parent="expansion" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Storage
+                </th>
             </tr>
             <tr>
                 <th class="ps-5">SATA</th>

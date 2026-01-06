@@ -4,8 +4,39 @@ import re
 
 class DotWrapper:
     """
-    Wrapper for dictionary to allow case-insensitive, symbol-ignoring dot notation.
-    d.general.networking.ethernet.lan -> d['General']['Networking']['Ethernet']['LAN']
+    Fuzzy dictionary wrapper for template-friendly attribute access.
+    
+    Enables accessing nested dictionaries with normalized keys, making Jinja2 templates cleaner:
+        d.general.audio.codec       # Instead of: d['General']['Audio']['Codec']
+        d.usb_20_header             # Instead of: d['USB 2.0 Header']
+        d.rj45                      # Instead of: d['# RJ-45']
+    
+    Normalization Rules:
+        1. Case-insensitive matching
+        2. Removes symbols: '_', '-', '#', '+', '/', etc.
+        3. Removes spaces
+        4. Preserves numbers
+    
+    Examples:
+        >>> wrapper = DotWrapper({'Audio Codec+DAC': 'ALC4080'})
+        >>> wrapper.audiocodecdac
+        'ALC4080'
+        >>> wrapper.audio_codec_dac
+        'ALC4080'
+        
+        >>> wrapper = DotWrapper({'# RJ-45': '2'})
+        >>> wrapper.rj45
+        '2'
+        
+        >>> wrapper = DotWrapper({'General': {'Audio': {'Codec': 'ALC4080'}}})
+        >>> wrapper.general.audio.codec
+        'ALC4080'
+    
+    Missing Keys:
+        Returns an empty DotWrapper (null object pattern) to enable safe chaining:
+        >>> wrapper = DotWrapper({'Brand': 'ASUS'})
+        >>> wrapper.nonexistent.deeply.nested  # Doesn't crash
+        <DotWrapper {}>
     """
     def __init__(self, data):
         self._data = data
@@ -16,24 +47,20 @@ class DotWrapper:
             val = self._data[name]
             return DotWrapper(val) if isinstance(val, dict) else val
             
-        # 2. Fuzzy match
-        # Normalize target name: generic_name -> genericname
+        # 2. Fuzzy match: normalize both target and keys
+        # Target: 'usb_20_header' → 'usb20header'
         target_clean = name.lower().replace('_', '').replace(' ', '')
         
         for key, val in self._data.items():
-            # Normalize key: 'General' -> 'general', '# RJ-45' -> 'rj45', 'Audio Codec+DAC' -> 'audiocodecdac'
+            # Key: '# RJ-45' → 'rj45', 'Audio Codec+DAC' → 'audiocodecdac'
             key_clean = str(key).lower()
             key_clean = re.sub(r'[^a-z0-9]', '', key_clean)
             
-            if key_clean == target_clean or (target_clean in key_clean and len(target_clean) > 3): 
-                # (relaxed match if needed, but strict fuzzy preferred for now to avoid ambiguity)
-                # Let's stick to strict normalized match first.
-                pass
-            
             if key_clean == target_clean:
-                 return DotWrapper(val) if isinstance(val, dict) else val
+                return DotWrapper(val) if isinstance(val, dict) else val
 
-        return DotWrapper({}) # Return empty wrapper to chain safely (null object pattern)
+        # 3. Not found: return empty wrapper (null object pattern)
+        return DotWrapper({})
     
     def __getitem__(self, name):
         # Support bracket access d['key']

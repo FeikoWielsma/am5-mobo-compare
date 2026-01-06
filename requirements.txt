@@ -1,0 +1,6 @@
+Flask
+openpyxl
+pandas
+SQLAlchemy
+pytest
+pytest-cov

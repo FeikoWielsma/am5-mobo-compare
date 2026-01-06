@@ -33,8 +33,9 @@
                 <td>{{ m.brand }}</td>
                 <td>{{ m.chipset }}</td>
                 <td class="fw-bold">{{ m.model }}</td>
-                <td>{{ m.data.get('Form Factor', '-') }}</td>
-                <td>{{ m.data.get('A-MSRP (USD)', '-') }}</td>
+                <td>{{ m.get('Motherboard', {}).get('General', {}).get('Form Factor', '-') }}</td>
+                <td>{% set price = m.get('General', {}).get('Market', {}).get('A-MSRP (USD)', '-') %}{{ price if price
+                    != 'nan' else '-' }}</td>
             </tr>
             {% endfor %}
         </tbody>

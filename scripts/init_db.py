@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 sys.path.append(os.getcwd())
 
 from models import get_engine, Base, Motherboard, Structure
-from data_loader import load_data
+from loaders import load_data
 
 def init_db():
     print("Initializing Database...")
