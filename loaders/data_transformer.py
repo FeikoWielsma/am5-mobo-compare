@@ -41,6 +41,10 @@ def unflatten_record(record):
             value = ""
         clean_val = str(value).strip()
         
+        # Normalize keys/aliases
+        if "Lane-sharing" in key and "bifurcation" in key:
+            key = "Notes|Details"
+            
         # Split into path components
         parts = key.split('|')
         

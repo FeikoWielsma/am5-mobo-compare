@@ -17,8 +17,7 @@ MAX_COLUMNS = 250          # Maximum columns to read per sheet (performance limi
 # Header filtering - patterns to ignore in header text
 SKIP_HEADER_PATTERNS = [
     "Use the tabs",
-    "Missing/incorrect information",
-    "notes"
+    "Missing/incorrect information"
 ]
 
 # Special identity columns that should remain flat (not hierarchical)

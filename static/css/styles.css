@@ -261,3 +261,16 @@ tr[data-collapsed="true"] i {
         opacity: 1;
     }
 }
+
+/* USB Colors */
+.usb-icon {
+    font-weight: bold;
+    margin-right: 0.5rem;
+    font-style: normal;
+    display: inline-block;
+}
+.usb-20 { color: #212529 !important; } /* Dark/Black */
+.usb-30, .usb-5g { color: #0d6efd !important; } /* Bootstrap Primary Blue */
+.usb-10g { color: #20c997 !important; } /* Teal */
+.usb-20g { color: #fd7e14 !important; } /* Orange */
+.usb-40g, .usb-tb { color: #dc3545 !important; } /* Red */

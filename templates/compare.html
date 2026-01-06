@@ -342,22 +342,22 @@
                 </th>
             </tr>
             <tr>
-                <th class="ps-5">USB 2.0 Header</th>
+                <th class="ps-5"><i class="bi bi-usb-symbol usb-icon usb-20"></i> USB 2.0 Header</th>
                 {% for m in mobos %} <td class="text-center">{{
                     m.dot.internal_headers_features.usbthunderbolt.usb_20_header }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-5">USB 3.0 Header</th>
+                <th class="ps-5"><i class="bi bi-usb-symbol usb-icon usb-30"></i> USB 3.0 Header</th>
                 {% for m in mobos %} <td class="text-center">{{
                     m.dot.internal_headers_features.usbthunderbolt.usb_30_header }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-5">USB-C Header</th>
+                <th class="ps-5"><i class="bi bi-usb-c usb-icon usb-10g"></i> USB-C Header</th>
                 {% for m in mobos %} <td class="text-center">{{
                     m.dot.internal_headers_features.usbthunderbolt.usbc_header }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-5">TB Header</th>
+                <th class="ps-5"><i class="bi bi-thunderbolt usb-icon usb-tb"></i> TB Header</th>
                 {% for m in mobos %} <td class="text-center">{{
                     m.dot.internal_headers_features.usbthunderbolt.tb_header_appearance_varies }}</td> {% endfor %}
             </tr>
@@ -391,16 +391,16 @@
                 </th>
             </tr>
             <tr>
-                <th class="ps-5">Type A 2.0</th>
+                <th class="ps-5"><i class="bi bi-usb-symbol usb-icon usb-20"></i> Type A 2.0</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_a['20'] }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-5">Type A 5Gbps</th>
+                <th class="ps-5"><i class="bi bi-usb-symbol usb-icon usb-5g"></i> Type A 5Gbps</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_a['32g1_5gbps'] }}</td> {% endfor
                 %}
             </tr>
             <tr>
-                <th class="ps-5">Type A 10Gbps</th>
+                <th class="ps-5"><i class="bi bi-usb-symbol usb-icon usb-10g"></i> Type A 10Gbps</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_a['32g2_10gbps'] }}</td> {%
                 endfor %}
             </tr>
@@ -410,22 +410,22 @@
             </tr>
 
             <tr>
-                <th class="ps-5">Type C 5Gbps</th>
+                <th class="ps-5"><i class="bi bi-usb-c usb-icon usb-5g"></i> Type C 5Gbps</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_c['32g1_5gbps'] }}</td> {% endfor
                 %}
             </tr>
             <tr>
-                <th class="ps-5">Type C 10Gbps</th>
+                <th class="ps-5"><i class="bi bi-usb-c usb-icon usb-10g"></i> Type C 10Gbps</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_c['32g2_10gbps'] }}</td> {%
                 endfor %}
             </tr>
             <tr>
-                <th class="ps-5">Type C 20Gbps</th>
+                <th class="ps-5"><i class="bi bi-usb-c usb-icon usb-20g"></i> Type C 20Gbps</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.rear_io.usb.type_c['32g2x2_20gbps'] }}</td> {%
                 endfor %}
             </tr>
             <tr>
-                <th class="ps-5">USB4 40Gbps</th>
+                <th class="ps-5"><i class="bi bi-thunderbolt usb-icon usb-40g"></i> USB4 40Gbps</th>
                 {% for m in mobos %} <td class="text-center text-primary fw-bold">{{
                     m.dot.rear_io.usb.type_c.usb4_40gbps }}</td> {% endfor %}
             </tr>
@@ -548,12 +548,22 @@
                 endfor %}
             </tr>
 
-            <!-- LINKS -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Links</th>
+            <!-- BOARD INFO -->
+            <tr class="table-secondary section-header" data-section="meta" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">
+                    <i class="bi bi-chevron-down"></i> Board Meta Info
+                    <span class="collapsed-subsections-badge" data-parent="meta"></span>
+                </th>
+            </tr>
+
+            <!-- Links -->
+            <tr class="table-light subsection-header" data-subsection="meta-links" data-parent="meta" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Links
+                </th>
             </tr>
             <tr>
-                <th class="ps-4">Website</th>
+                <th class="ps-5">Website</th>
                 {% for m in mobos %}
                 <td class="text-center">
                     {% if m.dot.links.website %}
@@ -563,33 +573,37 @@
                 {% endfor %}
             </tr>
 
-            <!-- COLORS -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Colors</th>
+            <!-- Colors -->
+            <tr class="table-light subsection-header" data-subsection="meta-colors" data-parent="meta" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Colors
+                </th>
             </tr>
             <tr>
-                <th class="ps-4">Heatsink Primary</th>
+                <th class="ps-5">Heatsink Primary</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.color.heatsink.primary }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-4">Heatsink Accent</th>
+                <th class="ps-5">Heatsink Accent</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.color.heatsink.textaccent }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-4">PCB Accent</th>
+                <th class="ps-5">PCB Accent</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.color.pcb.accent }}</td> {% endfor %}
             </tr>
             <tr>
-                <th class="ps-4">PCB Primary</th>
+                <th class="ps-5">PCB Primary</th>
                 {% for m in mobos %} <td class="text-center">{{ m.dot.color.pcb.primary }}</td> {% endfor %}
             </tr>
 
-            <!-- IMAGE -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Image</th>
+            <!-- Image -->
+            <tr class="table-light subsection-header" data-subsection="meta-image" data-parent="meta" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Rear I/O Image
+                </th>
             </tr>
             <tr>
-                <th class="ps-4">View</th>
+                <th class="ps-5">View</th>
                 {% for m in mobos %}
                 <td class="text-center">
                     {% if m.dot.rear_io_image.view %}
@@ -599,23 +613,24 @@
                 {% endfor %}
             </tr>
 
-            <!-- NOTES -->
-            <tr class="table-light">
-                <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">Notes</th>
+            <!-- Notes -->
+            <tr class="table-light subsection-header" data-subsection="meta-notes" data-parent="meta" style="cursor: pointer;">
+                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
+                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Notes
+                </th>
             </tr>
             <tr>
-                <th class="ps-4">Details</th>
+                <th class="ps-5">Details</th>
                 {% for m in mobos %}
                 <td class="text-center small text-muted">
                     {% if m.dot.notes and m.dot.notes.details %}
-                    {{ m.dot.notes.details }}
+                        {{ m.dot.notes.details }}
                     {% else %}
-                    -
+                        -
                     {% endif %}
                 </td>
                 {% endfor %}
             </tr>
-
 
         </tbody>
     </table>
