@@ -16,7 +16,8 @@ def init_db():
     
     print("Loading data from Excel...")
     try:
-        mobo_data, mobo_structure = load_data()
+        # load_data now returns list of dicts with 'specs' key populated
+        mobo_data, header_tree = load_data()
     except Exception as e:
         print(f"Error loading data: {e}")
         return
@@ -25,29 +26,17 @@ def init_db():
     
     with Session(engine) as session:
         # Insert Structure
-        struct_entry = Structure(id=1, content=mobo_structure)
+        struct_entry = Structure(id=1, content=header_tree)
         session.add(struct_entry)
         
         # Insert Motherboards
         for m in mobo_data:
             entry = Motherboard(
-                id=m.get('id'),
-                brand=m.get('Brand', ''),
-                model=m.get('Model', ''),
-                chipset=m.get('Chipset', ''),
-                
-                # New Components matching Excel
-                general=m.get('general'),
-                rear_io=m.get('rear_io'),
-                video_outs=m.get('video_outs'),
-                expansion=m.get('expansion'),
-                memory=m.get('memory'),
-                network=m.get('network'),
-                audio=m.get('audio'),
-                vrm=m.get('vrm'),
-                internal_io=m.get('internal_io'),
-                
-                data=m # Keep full data
+                id=m['id'],
+                brand=m['brand'],
+                model=m['model'],
+                chipset=m['chipset'],
+                specs=m['specs'] # The full hierarchy
             )
             session.add(entry)
         

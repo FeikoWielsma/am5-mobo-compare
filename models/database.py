@@ -11,25 +11,14 @@ class Motherboard(Base):
     model = Column(String, index=True)
     chipset = Column(String, index=True)
     
-    # Components matching Excel Structure
-    general = Column(JSON)      # General (Brand, Chipset, Model, Form Factor)
-    rear_io = Column(JSON)      # Rear I/O (USB, Legacy)
-    video_outs = Column(JSON)   # Video Outs (Modern, Internal)
-    expansion = Column(JSON)    # Expansion (PCIe Slots, Storage)
-    memory = Column(JSON)       # Memory
-    network = Column(JSON)      # Network (Ethernet, Wireless)
-    audio = Column(JSON)        # Audio
-    vrm = Column(JSON)          # VRM
-    internal_io = Column(JSON)  # Internal I/O
+    # Single Generic Specs Column containing the entire Unflattened Hierarchy
+    specs = Column(JSON)
     
-    # Keep original flat data
-    data = Column(JSON)
-
 class Structure(Base):
     __tablename__ = 'structure'
     
     id = Column(Integer, primary_key=True)
-    content = Column(JSON)
+    content = Column(JSON) # Stores the Header Tree
 
 def get_engine(db_url='sqlite:///mobo.db'):
     return create_engine(db_url)

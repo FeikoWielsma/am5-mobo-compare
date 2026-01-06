@@ -7,95 +7,102 @@
     <a href="/" class="btn btn-outline-secondary">Back to List</a>
 </div>
 
-<div class="sticky-toolbar">
-    <div class="d-flex gap-2 align-items-center px-2">
-        <span class="fw-bold">Components View</span>
-        <span class="ms-auto text-muted small">Scroll horizontally for more boards →</span>
-    </div>
+<div class="sticky-toolbar p-2 bg-light border-bottom">
+    <div class="fw-bold">Dynamic View (Excel Hierarchy)</div>
 </div>
 
 <div class="table-container">
-    <table class="table table-bordered" id="compareTable">
+    <table class="table table-bordered table-hover" id="compareTable">
         <thead class="table-dark sticky-header">
             <tr>
-                <th style="min-width: 150px; width: 150px;">Component</th>
+                <th style="min-width: 250px; width: 250px;">Feature</th>
                 {% for m in mobos %}
-                <th style="min-width: 300px;">
-                    {% include 'components/general.html' %}
+                <th style="min-width: 250px;" class="text-center">
+                    <div>{{ m.brand }}</div>
+                    <div class="fs-5">{{ m.model }}</div>
+                    <span class="badge bg-secondary">{{ m.chipset }}</span>
                 </th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
 
-            <!-- 1. Rear I/O -->
-            <tr>
-                <th class="align-middle bg-light text-center">Rear I/O</th>
-                {% for m in mobos %}
-                <td>{% include 'components/rear_io.html' %}</td>
-                {% endfor %}
-            </tr>
+            {# Recursive Macro to Render Tree #}
+            {% macro render_tree(nodes, parent_path=[]) %}
+            {% for node in nodes %}
+            {# Check if Node has Children (Category) or is Leaf (Feature) #}
+            {% if node.children %}
+            {# Render Category Header #}
+            {# Optimization: Only show header if it's top level or significant?
+            For strict hierarchy, let's treat top-level as Section Header (Gray)
+            and nested levels as indented row headers? #}
 
-            <!-- 2. Video Outs -->
-            <tr>
-                <th class="align-middle bg-light text-center">Video Outs</th>
-                {% for m in mobos %}
-                <td>{% include 'components/video_outs.html' %}</td>
-                {% endfor %}
+            {% if parent_path|length == 0 %}
+            <tr class="table-secondary">
+                <th colspan="{{ mobos|length + 1 }}">{{ node.name }}</th>
             </tr>
+            {{ render_tree(node.children, parent_path + [node.name]) }}
+            {% else %}
+            {# It's a sub-category. Maybe just recurse.
+            Or add a row indicating subcat?
+            User wants clean view.
+            Let's flatten visually: "Parent > Child" in the Feature column for intermediate nodes.
+            #}
+            {{ render_tree(node.children, parent_path + [node.name]) }}
+            {% endif %}
 
-            <!-- 3. Expansion (PCIe & Storage) -->
+            {% else %}
+            {# It's a LEAF. Render Data Row #}
             <tr>
-                <th class="align-middle bg-light text-center">Expansion<br><small class="fw-normal">PCIe &
-                        Storage</small></th>
-                {% for m in mobos %}
-                <td>{% include 'components/expansion.html' %}</td>
-                {% endfor %}
-            </tr>
+                {# Feature Name: Indent based on depth or showing full path?
+                Simple indentation is cleaner. #}
+                <th style="padding-left: {{ (parent_path|length) * 20 }}px;">
+                    {% if parent_path|length > 1 %}
+                    <span class="text-muted small">{{ parent_path[-1] }} &rsaquo;</span>
+                    {% endif %}
+                    {{ node.name }}
+                </th>
 
-            <!-- 4. Memory -->
-            <tr>
-                <th class="align-middle bg-light text-center">Memory</th>
+                {# Render Columns #}
                 {% for m in mobos %}
-                <td>{% include 'components/memory.html' %}</td>
-                {% endfor %}
-            </tr>
+                <td class="text-center">
+                    {# Fetch value using logic in macro or jinja context?
+                    m.specs is huge nested dict.
+                    We need to traverse it using keys in parent_path + [node.name].
+                    But wait, unflattening logic used strict keys.
+                    Ideally, we stored the 'key' (pipe delimited) in the node structure?
+                    Yes, build_header_tree in dataloader assigns 'key' to leaf nodes.
+                    #}
 
-            <!-- 5. Network -->
-            <tr>
-                <th class="align-middle bg-light text-center">Network</th>
-                {% for m in mobos %}
-                <td>{% include 'components/network.html' %}</td>
-                {% endfor %}
-            </tr>
+                    {# Helper to resolve nested dict by list of keys #}
+                    {% set ns = namespace(current=m.specs) %}
+                    {% for part in parent_path %}
+                    {% if ns.current and part in ns.current %}
+                    {% set ns.current = ns.current[part] %}
+                    {% else %}
+                    {% set ns.current = {} %}
+                    {% endif %}
+                    {% endfor %}
 
-            <!-- 6. Audio -->
-            <tr>
-                <th class="align-middle bg-light text-center">Audio</th>
-                {% for m in mobos %}
-                <td>{% include 'components/audio.html' %}</td>
+                    {# Final Access #}
+                    {% if ns.current and node.name in ns.current %}
+                    {# Value found #}
+                    {{ ns.current[node.name] }}
+                    {% else %}
+                    <span class="text-muted small">-</span>
+                    {% endif %}
+                </td>
                 {% endfor %}
             </tr>
+            {% endif %}
+            {% endfor %}
+            {% endmacro %}
 
-            <!-- 7. VRM -->
-            <tr>
-                <th class="align-middle bg-light text-center">VRM</th>
-                {% for m in mobos %}
-                <td>{% include 'components/vrm.html' %}</td>
-                {% endfor %}
-            </tr>
-
-            <!-- 8. Internal I/O -->
-            <tr>
-                <th class="align-middle bg-light text-center">Internal I/O</th>
-                {% for m in mobos %}
-                <td>{% include 'components/internal_io.html' %}</td>
-                {% endfor %}
-            </tr>
+            {# Start Rendering with Root Nodes #}
+            {{ render_tree(structure) }}
 
         </tbody>
     </table>
 </div>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 {% endblock %}

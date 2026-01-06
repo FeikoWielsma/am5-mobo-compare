@@ -43,7 +43,10 @@ def compare():
     # Sort them by the order of IDs if possible, or just brand/model
     # For now, simplistic
     
-    return render_template('compare.html', mobos=selected_mobos)
+    # Get Structure (Header Tree)
+    structure = service.get_structure()
+    
+    return render_template('compare.html', mobos=selected_mobos, structure=structure)
 
 @app.route('/api/mobos')
 def api_mobos():
