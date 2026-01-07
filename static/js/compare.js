@@ -645,32 +645,14 @@ function parseValue(text, fieldName) {
     // Custom LAN Controller parsing
     // Uses global LAN_SCORES injected from backend
     if (fieldName && fieldName.includes('LAN Controller') && typeof LAN_SCORES !== 'undefined') {
-        let totalSpeed = 0;
-        const normalizedText = text.toUpperCase();
-        let matched = false;
-
-        // Iterate through all known controllers and check if present
-        for (const [controller, speed] of Object.entries(LAN_SCORES)) {
-            // Check if controller name (or part of it) is in text
-            // The controller keys from Excel might be "Intel I226-V".
-            // The text might be "Intel I-226V" (extra hyphen).
-            // Simple approach: Check if key is substring of text (case insensitive)
-
-            // Normalize key for search: remove special chars to be safe?
-            // Actually, let's just check inclusion directly first.
-            if (normalizedText.includes(controller.toUpperCase())) {
-                totalSpeed += speed;
-                matched = true;
-            }
-        }
-
-        // If we found matches, return the sum
-        if (matched) {
+        const controllers = getLanControllers(text);
+        if (controllers.length > 0) {
+            const totalSpeed = controllers.reduce((sum, c) => sum + c.speed, 0);
             return { text, score: totalSpeed, isNumeric: true };
         }
-
-        // Fallback or if no known controller found (e.g. generic text) -> 0
     }
+
+    // Fallback or if no known controller found (e.g. generic text) -> 0
 
     // Custom Wireless parsing
     // Hierarchy: Gen 7 > 6E > 6 > 5 > Slot > None
@@ -1060,6 +1042,11 @@ function analyzeTable() {
                     const parsed = parsedValues[index];
                     const normalized = normalizedTexts[index];
 
+                    // Format LAN Display if applicable
+                    if (fieldName.includes('lan controller') && parsed && parsed.isNumeric && typeof LAN_SCORES !== 'undefined') {
+                        formatLANDisplay(cell, parsed.text);
+                    }
+
                     // Empty/missing values get marked as differs
                     if (!parsed || parsed.text === '' || parsed.text === '-') {
                         cell.setAttribute('data-differs', 'true');
@@ -1163,6 +1150,116 @@ function analyzeTable() {
             }
         }
     });
+}
+
+/**
+ * Normalize LAN text to handle abbreviations and variations
+ * e.g. "Rltk" -> "Realtek", "AQC113CS" -> "AQC113C"
+ */
+function normalizeLANText(text) {
+    let norm = text;
+    // Common abbreviations
+    norm = norm.replace(/Rltk/ig, 'Realtek');
+    norm = norm.replace(/AQC113CS/ig, 'AQC113C'); // Handle specific model variation
+    // Remove all non-alphanumeric for robust matching
+    return norm.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+/**
+ * Extract distinct LAN controllers from text, handling sub-string overlaps.
+ * Returns array of { name: str, speed: int }
+ */
+function getLanControllers(text) {
+    if (!text || typeof LAN_SCORES === 'undefined') return [];
+
+    const cleanText = normalizeLANText(text);
+    let matches = [];
+
+    // 1. Find all potential matches
+    for (const [controller, speed] of Object.entries(LAN_SCORES)) {
+        const cleanController = controller.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (cleanText.includes(cleanController)) {
+            matches.push({ name: controller, speed: speed, clean: cleanController });
+        }
+    }
+
+    // 2. Filter out substrings (e.g. if "RTL8111H" is found, ignore "RTL8111")
+    const distinctMatches = matches.filter(m => {
+        const isSubstring = matches.some(other =>
+            other !== m && other.clean.includes(m.clean)
+        );
+        return !isSubstring;
+    });
+
+    return distinctMatches;
+}
+
+/**
+ * Format LAN Controller cell to show badges and split lines per controller
+ */
+function formatLANDisplay(cell, text) {
+    if (!text) return;
+
+    const foundControllers = getLanControllers(text);
+
+    // If no controllers found, do nothing
+    if (foundControllers.length === 0) return;
+
+    // Sort by speed desc
+    foundControllers.sort((a, b) => b.speed - a.speed);
+
+    // Build HTML
+    let html = '';
+
+    // Helper to determine badge color
+    const getBadge = (speed) => {
+        if (speed >= 10000) return `<span class="badge bg-danger">10G</span>`;
+        if (speed >= 5000) return `<span class="badge bg-warning text-dark">5G</span>`;
+        if (speed >= 2500) return `<span class="badge bg-info text-dark">2.5G</span>`;
+        return `<span class="badge bg-secondary">1G</span>`;
+    };
+
+    // Helper for specific text label if needed
+    const getLabel = (speed) => {
+        if (speed >= 10000) return '10G';
+        if (speed >= 5000) return '5G';
+        if (speed >= 2500) return '2.5G';
+        return '1G';
+    };
+
+    // We only want to show each matched controller once, but carefully.
+    // Sometimes text is "Intel I226-V, Marvell AQC113C"
+    // We found both. We want to display them nicely.
+    // The original text might have extra info (like "Double 25G").
+    // Let's try to reconstruct decent display lines.
+
+    foundControllers.forEach(c => {
+        const speedLabel = getLabel(c.speed);
+        let badgeClass = 'bg-secondary';
+
+        if (c.speed >= 10000) badgeClass = 'bg-danger';
+        else if (c.speed >= 5000) badgeClass = 'bg-warning text-dark';
+        else if (c.speed >= 2500) badgeClass = 'bg-info text-dark';
+
+        let displayLabel = speedLabel;
+        if (c.speed > 10000 && c.speed !== 20000 && c.speed !== 10000) displayLabel = 'Fast'; // Guard for weird speeds
+
+        // Badge on right
+        html += `<div class="mb-1 d-flex align-items-center justify-content-center gap-2">
+                    <span class="small">${c.name}</span>
+                    <span class="badge ${badgeClass}">${displayLabel}</span>
+                 </div>`;
+    });
+
+    // Preserve tooltips if they existed in original cell?
+    // The original structure was commonly: <span tooltip> Text <i>icon</i> </span>
+    // Replacing innerHTML destroys the tooltip element.
+    // Ideally we append the formatted part or replace the text part.
+    // BUT the request is to clean it up.
+    // Let's replace the content but try to keep any 'note' logic if complex.
+    // For now, replacing with clean badges is likely what the user wants for "multi-line cleaner".
+
+    cell.innerHTML = html;
 }
 
 /**

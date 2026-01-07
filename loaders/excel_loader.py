@@ -242,6 +242,26 @@ def load_lan_lookup():
             if total_speed > 0:
                 lookup[name] = total_speed
                 
+        # Inject defaults for common missing controllers (Safety Net)
+        defaults = {
+            "Realtek RTL8111H": 1000,
+            "Realtek RTL8111": 1000, 
+            "Realtek RTL8125": 2500,
+            "Realtek RTL8125B": 2500,
+            "Realtek RTL8125BG": 2500,
+            "Realtek RTL8126": 5000,
+            "Intel I219-V": 1000,
+            "Intel I219-LM": 1000,
+            "Intel I225-V": 2500,
+            "Intel I226-V": 2500,
+            "Marvell AQC113C": 10000,
+            "Marvell AQC113CS": 10000
+        }
+        
+        for name, speed in defaults.items():
+            if name not in lookup:
+                lookup[name] = speed
+                
         return lookup
         
     except Exception as e:
