@@ -666,28 +666,8 @@
                 {% endfor %}
             </tr>
 
+
             <!-- Notes -->
-            <tr class="table-light subsection-header" data-subsection="meta-notes" data-parent="meta"
-                style="cursor: pointer;">
-                <th colspan="{{ mobos|length + 1 }}" class="ps-4 fst-italic text-muted">
-                    <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i> Notes
-                </th>
-            </tr>
-            <tr>
-                <th class="ps-5">Details</th>
-                {% for m in mobos %}
-                <td class="text-center small text-muted">
-                    {% if m.dot.notes and m.dot.notes.details %}
-                    {{ m.dot.notes.details }}
-                    {% else %}
-                    -
-                    {% endif %}
-                </td>
-                {% endfor %}
-            </tr>
-
-
-            <!-- NOTES (Separate Parent Section) -->
             <tr class="table-secondary section-header" data-section="notes" style="cursor: pointer;">
                 <th colspan="{{ mobos|length + 1 }}" class="text-uppercase">
                     <i class="bi bi-chevron-down"></i> Notes

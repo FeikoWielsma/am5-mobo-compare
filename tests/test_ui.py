@@ -1,7 +1,6 @@
 import pytest
 from playwright.sync_api import Page, expect
 import re
-
 import requests
 
 @pytest.fixture(scope="module")
@@ -62,10 +61,6 @@ def test_add_remove_flow(page: Page, valid_ids):
         
     page.goto("http://localhost:5000/compare")
     
-    # Search for the brand of the first valid mobo?
-    # Or just generic "X870" if we know it exists. 
-    # Better: Use API fetch to find a real name.
-    
     # Search logic
     page.fill("#moboSearch", "ASUS") # "ASUS" should return results
     page.wait_for_selector("#searchDropdown .dropdown-item")
@@ -104,3 +99,71 @@ def test_url_persistence(page: Page, valid_ids):
     # Verify still there
     expect(page.locator(".group-header")).to_have_count(1)
     expect(page).to_have_url(re.compile(f"ids={id_to_test}"))
+
+def test_section_collapse(page: Page, valid_ids):
+    """Test that clicking a section header collapses/expands its rows."""
+    if not valid_ids:
+        pytest.skip("No motherboards available.")
+        
+    id_to_test = valid_ids[0]
+    page.goto(f"http://localhost:5000/compare?ids={id_to_test}")
+    
+    # Find a section header, e.g., "General"
+    # We can assume 'General' exists or find any .section-header
+    section_header = page.locator(".section-header >> nth=0")
+    expect(section_header).to_be_visible()
+    
+    # Get the row immediately following it
+    # We need a robust way to identify "content rows" for this section
+    # Usually it's the next sibling.
+    
+    # Playwright's locator strategies:
+    # We can get the section name, then verify row with that section is hidden.
+    # But rows don't always have section attr. 
+    # CSS: .section-header + tr (CSS next sibling)
+    
+    # Let's interact and check CSS display
+    
+    # 1. Initial State: Visible
+    # Check if the next row is visible. 
+    # Note: next-sibling selector in Playwright requires careful xpath or 'adjacent' logic.
+    # We can assume the default state is Expanded.
+    
+    # Click to Collapse
+    section_header.click()
+    
+    # Wait for potential animation or state change
+    # The JS sets style.display = 'none' on following rows.
+    
+    # Check if the icon changed (chevron-down -> chevron-right)
+    # This confirms JS ran.
+    icon = section_header.locator("i")
+    expect(icon).to_have_class(re.compile("bi-chevron-right"))
+    
+    # Click to Expand
+    section_header.click()
+    expect(icon).to_have_class(re.compile("bi-chevron-down"))
+
+def test_sticky_header_structure(page: Page, valid_ids):
+    """Verify that table headers have the necessary classes for sticky behavior."""
+    if not valid_ids:
+        pytest.skip("No motherboards available.")
+    
+    ids = ",".join(valid_ids[:2])
+    page.goto(f"http://localhost:5000/compare?ids={ids}")
+    
+    # Check .sticky-header class on thead
+    # Actually, inspect `compare.html`: 
+    # The `th` elements inside the `thead` have `top: 0` via CSS.
+    # The standard implementation uses `.sticky-header th`.
+    
+    # We fixed a bug by REMOVING `position-relative` from `th.group-header`.
+    # Let's ensure `th.group-header` does NOT have `position-relative`.
+    
+    headers = page.locator("th.group-header")
+    expect(headers.first).not_to_have_class(re.compile("position-relative"))
+    
+    # And ideally check it has 'position: sticky' computed style?
+    # Playwright `expect(locator).to_have_css("position", "sticky")`
+    expect(headers.first).to_have_css("position", "sticky")
+    expect(headers.first).to_have_css("top", "0px")

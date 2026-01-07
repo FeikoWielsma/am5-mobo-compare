@@ -24,6 +24,7 @@ const FIELD_RULES = {
         'accent',
         'textaccent',
         'superiocontroller',
+        'super i/o',
         'lane-sharing',
         'bifurcation'
     ],
@@ -640,6 +641,62 @@ function updateParentSectionBadges() {
  */
 function parseValue(text, fieldName) {
     if (!text || text === '-' || text === '') return null;
+
+    // Custom "Total M.2 (M)" parsing: "5(+2)" -> 5 Onboard + 2 AIC
+    // Priority: Total Count > Onboard Count
+    if (fieldName && fieldName.includes('Total M.2')) {
+        // Check for "X(+Y)" format
+        const match = text.match(/(\d+)\(\+(\d+)\)/);
+        if (match) {
+            const onboard = parseInt(match[1]);
+            const extra = parseInt(match[2]);
+            const total = onboard + extra;
+
+            // Score: (Total * 100) + Onboard
+            // Example: 5(+2) = 7 total. Score 705.
+            // Example: 5     = 5 total. Score 505.
+            // Example: 3(+2) = 5 total. Score 503.
+            return { text, score: (total * 100) + onboard, isNumeric: true };
+        }
+
+        // Fallback for simple numbers "5" in this field
+        // Treat as "5(+0)" -> Score 505
+        const simple = text.match(/^\d+$/);
+        if (simple) {
+            const val = parseInt(simple[0]);
+            return { text, score: (val * 100) + val, isNumeric: true };
+        }
+    }
+
+    // Custom M.2 parsing: "1*4x4" -> Count * Gen x Lanes
+    // Priority: Total Slots > Bandwidth
+    if (fieldName && (fieldName.includes('M.2') || fieldName.includes('m.2'))) {
+        const m2Regex = /(\d+)\*(\d+)x(\d+)/g;
+        let totalSlots = 0;
+        let bandwidthScore = 0;
+        let match;
+        let found = false;
+
+        while ((match = m2Regex.exec(text)) !== null) {
+            found = true;
+            const count = parseInt(match[1]);
+            const gen = parseInt(match[2]);
+            const lanes = parseInt(match[3]);
+
+            totalSlots += count;
+            // Bandwidth heuristic: Count * (Gen * 100 + Lanes)
+            // e.g. 4x4 = 404, 3x4 = 304.
+            bandwidthScore += count * ((gen * 100) + lanes);
+        }
+
+        if (found) {
+            // Score = (Slots * 1,000,000) + Bandwidth
+            // This ensures 2 slots (score > 2,000,000) always beats 1 slot (score < 1,999,999)
+            // regardless of generation.
+            const finalScore = (totalSlots * 1000000) + bandwidthScore;
+            return { text, score: finalScore, isNumeric: true };
+        }
+    }
 
     const numbers = text.match(/\d+/g);
 
