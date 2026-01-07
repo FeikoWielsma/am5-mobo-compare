@@ -40,10 +40,108 @@
     font-weight: 600 !important;
 }
 
-/* Badges for Gen 5 etc */
+/* Badges for Chipsets and Form Factors */
 .badge {
     font-weight: 500;
     letter-spacing: 0.02em;
+    padding: 0.4em 0.8em;
+    border-radius: 4px;
+}
+
+/* Chipset Badges (Subtle) */
+.badge-chipset {
+    border: 1px solid transparent;
+}
+
+/* X870 Series (Gold/Amber) */
+.badge-chipset-x870e {
+    background-color: #fff3e0 !important;
+    color: #e65100 !important;
+    border-color: #ffcc80 !important;
+}
+
+.badge-chipset-x870 {
+    background-color: #fffde7 !important;
+    color: #f57f17 !important;
+    border-color: #fff59d !important;
+}
+
+/* X670 Series (Purple/Violet) */
+.badge-chipset-x670e {
+    background-color: #f3e5f5 !important;
+    color: #7b1fa2 !important;
+    border-color: #ce93d8 !important;
+}
+
+.badge-chipset-x670 {
+    background-color: #faf5ff !important;
+    color: #9333ea !important;
+    border-color: #e9d5ff !important;
+}
+
+/* B-Series (Blue/Teal) */
+.badge-chipset-b850 {
+    background-color: #e0f2f1 !important;
+    color: #00695c !important;
+    border-color: #b2dfdb !important;
+}
+
+.badge-chipset-b650e {
+    background-color: #e1f5fe !important;
+    color: #0277bd !important;
+    border-color: #b3e5fc !important;
+}
+
+.badge-chipset-b650 {
+    background-color: #f0f9ff !important;
+    color: #0369a1 !important;
+    border-color: #bae6fd !important;
+}
+
+/* Entry Series (Grey) */
+.badge-chipset-b840 {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    border-color: #cbd5e1 !important;
+}
+
+.badge-chipset-a620,
+.badge-chipset-a620a {
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* Form Factor Badges (Subtle) */
+.badge-ff {
+    border: 1px solid transparent;
+}
+
+.badge-ff-eatx {
+    background-color: #ffebee !important;
+    color: #c62828 !important;
+    border-color: #ffcdd2 !important;
+}
+
+.badge-ff-atx,
+.badge-ff-atxb {
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    border-color: #c8e6c9 !important;
+}
+
+.badge-ff-matx,
+.badge-ff-matxb {
+    background-color: #e0f2f1 !important;
+    color: #00796b !important;
+    border-color: #b2dfdb !important;
+}
+
+.badge-ff-mitx,
+.badge-ff-bkbitx {
+    background-color: #fff9c4 !important;
+    color: #fbc02d !important;
+    border-color: #fff9c4 !important;
 }
 
 /* Images in comparison */
@@ -75,4 +173,62 @@
 
 .group-header:hover .remove-mobo-btn {
     opacity: 1;
+}
+
+/* Filter Dropdowns */
+.filter-dropdown .dropdown-menu {
+    min-width: 200px;
+    z-index: 1060;
+}
+
+.filter-btn {
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.filter-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 0.85rem;
+}
+
+.filter-option:hover {
+    background-color: #f8f9fa;
+}
+
+.filter-option input {
+    margin-right: 0.5rem;
+}
+
+.filter-search-container {
+    position: sticky;
+    top: -8px;
+    background: white;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    z-index: 1;
+}
+
+.filter-actions {
+    position: sticky;
+    bottom: -8px;
+    background: white;
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    z-index: 1;
 }

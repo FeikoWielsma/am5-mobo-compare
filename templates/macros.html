@@ -21,3 +21,15 @@
 {% endif %}
 {% endif %}
 {% endmacro %}
+
+{# Macro for chipset badge #}
+{% macro chipset_badge(chipset) %}
+{% set c = chipset|lower|replace(' ', '')|replace('(', '')|replace(')', '') %}
+<span class="badge badge-chipset badge-chipset-{{ c }}">{{ chipset }}</span>
+{% endmacro %}
+
+{# Macro for form factor badge #}
+{% macro ff_badge(ff) %}
+{% set f = ff|lower|replace(' ', '')|replace('μ', 'm')|replace('u', 'm')|replace('-', '') %}
+<span class="badge badge-ff badge-ff-{{ f }}">{{ ff }}</span>
+{% endmacro %}

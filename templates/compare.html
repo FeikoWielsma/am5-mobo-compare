@@ -19,8 +19,9 @@
 
 <script>
     // Embed LAN Lookup from backend
-    const LAN_SCORES = {{ lan_lookup | tojson | safe }};
+    const LAN_SCORES = {{ lan_lookup | tojson | safe if lan_lookup else '{}' }};
 </script>
 <script src="{{ url_for('static', filename='js/parsers.js') }}"></script>
+<script src="{{ url_for('static', filename='js/static_renderer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/compare.js') }}"></script>
 {% endblock %}

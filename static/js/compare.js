@@ -15,6 +15,44 @@ let collapsedSubsections = new Set();
 let allMobos = []; // Store fetched mobos for search
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.IS_STATIC) {
+        initStaticMode();
+    } else {
+        initStandardMode();
+    }
+});
+
+function initStaticMode() {
+    console.log("Static Mode: Initializing comparison...");
+
+    // Fetch all needed chunks
+    Promise.all([
+        fetch('static/data/mobos.json').then(r => r.json()),
+        fetch('static/data/structure.json').then(r => r.json()),
+        fetch('static/data/lan_lookup.json').then(r => r.json())
+    ]).then(([mobos, structure, lanLookup]) => {
+        allMobos = mobos;
+        window.LAN_SCORES = lanLookup;
+
+        // Find which mobos to compare from URL
+        const params = new URLSearchParams(window.location.search);
+        const ids = (params.get('ids') || '').split(',').map(s => s.trim()).filter(s => s);
+
+        if (ids.length > 0) {
+            const selected = mobos.filter(m => ids.includes(String(m.id)));
+            // Sorting logic (simplified or ported if needed, but let's assume pre-sorted or just use what we have)
+            const tableContainer = document.querySelector('.table-container .table');
+            if (tableContainer && window.StaticRenderer) {
+                StaticRenderer.renderCompareTable(tableContainer, selected, structure);
+            }
+        }
+
+        bindEvents();
+        initSearch();
+    }).catch(err => console.error("Static Mode Error:", err));
+}
+
+function initStandardMode() {
     // Initial Bind
     bindEvents();
 
@@ -23,59 +61,69 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(response => response.json())
         .then(data => {
             allMobos = data;
+            initSearch();
         })
         .catch(err => console.error('Failed to fetch mobos for search', err));
+}
 
-    // Search Input Logic
-    const searchInput = document.getElementById('moboSearch');
-    const searchDropdown = document.getElementById('searchDropdown');
+function initSearch() {
+    const sInput = document.getElementById('moboSearch');
+    const sDropdown = document.getElementById('searchDropdown');
 
-    if (searchInput && searchDropdown) {
-        searchInput.addEventListener('input', (e) => {
+    if (sInput && sDropdown) {
+        sInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase();
             if (query.length < 2) {
-                searchDropdown.style.display = 'none';
+                sDropdown.style.display = 'none';
                 return;
             }
 
-            // Filter mobos (exclude ones already in URL if possible, but for now just show all matching)
             const currentIds = new URLSearchParams(window.location.search).get('ids')?.split(',') || [];
-
             const matches = allMobos.filter(m => {
-                const text = `${m.Brand} ${m.Model} ${m.Chipset}`.toLowerCase();
-                return text.includes(query) && !currentIds.includes(m.id.toString());
-            }).slice(0, 10); // Limit to 10
+                const brand = (m.Brand || m.brand || "").toLowerCase();
+                const model = (m.Model || m.model || "").toLowerCase();
+                const chipset = (m.Chipset || m.chipset || "").toLowerCase();
+                const text = `${brand} ${model} ${chipset}`;
+                return text.includes(query) && !currentIds.includes(String(m.id));
+            }).slice(0, 10);
 
             if (matches.length > 0) {
-                searchDropdown.innerHTML = '';
+                sDropdown.innerHTML = '';
                 matches.forEach(m => {
                     const item = document.createElement('div');
                     item.className = 'dropdown-item p-2 border-bottom';
+                    const brand = m.Brand || m.brand;
+                    const model = m.Model || m.model;
+                    const chipset = m.Chipset || m.chipset;
+                    const ff = m.FormFactor || m.form_factor;
+
                     item.innerHTML = `
-                        <div class="fw-bold">${m.Brand} ${m.Model}</div>
-                        <div class="small text-muted">${m.Chipset}</div>
+                        <div class="fw-bold">${brand} ${model}</div>
+                        <div class="mt-1">
+                            <span class="badge ${StaticRenderer.getChipsetClass(chipset)}">${chipset}</span>
+                            <span class="badge ${StaticRenderer.getFFClass(ff)}">${ff || '-'}</span>
+                        </div>
                     `;
                     item.addEventListener('click', () => {
                         addMobo(m.id);
-                        searchInput.value = ''; // Clear input
-                        searchDropdown.style.display = 'none';
+                        sInput.value = '';
+                        sDropdown.style.display = 'none';
                     });
-                    searchDropdown.appendChild(item);
+                    sDropdown.appendChild(item);
                 });
-                searchDropdown.style.display = 'block';
+                sDropdown.style.display = 'block';
             } else {
-                searchDropdown.style.display = 'none';
+                sDropdown.style.display = 'none';
             }
         });
 
-        // Hide dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
-                searchDropdown.style.display = 'none';
+            if (!sInput.contains(e.target) && !sDropdown.contains(e.target)) {
+                sDropdown.style.display = 'none';
             }
         });
     }
-});
+}
 
 /**
  * Bind all event listeners to static and dynamic elements

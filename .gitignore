@@ -214,6 +214,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-~$AM5 Motherboards Sheet (X870_X670_B850_B650_B840_A620).xlsx
+# Excel Data
+*.xlsx
+~$*.xlsx
 mobo.db
 .vscode/settings.json

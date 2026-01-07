@@ -1,4 +1,4 @@
-{% from 'macros.html' import cell, warning_check %}
+{% from 'macros.html' import cell, warning_check, chipset_badge, ff_badge %}
 <table class="table table-bordered table-hover" id="compareTable">
     <thead class="table-dark sticky-header">
         <tr>
@@ -11,9 +11,10 @@
                 </button>
                 <div>{{ m.brand }}</div>
                 <div class="fs-5">{{ m.model }}</div>
-                <span class="badge bg-secondary">{{ m.chipset }}</span>
-                <span class="badge bg-secondary">{{ cell(m.dot.motherboard.general.form_factor,
-                    m.dot.motherboard.general.form_factor_comment) }}</span>
+                <div class="mt-1">
+                    {{ chipset_badge(m.chipset) }}
+                    {{ ff_badge(m.form_factor) }}
+                </div>
 
                 {# Image View Link #}
                 {% if m.dot.rear_io_image.view %}
@@ -133,8 +134,18 @@
             <th class="ps-5">PCIe x16</th>
             {% for m in mobos %}
             {% set sc = m.specs.get('_scorecard', {}) %}
-            <td class="text-center small">{{ sc.get('pcie_x16_total', '-') }} ({{
-                m.dot.expansion.pcie_slots.physical_x16.electrical_lanes }})</td>
+            <td class="text-center">
+                <div class="fw-bold mb-1">
+                    {{ sc.get('pcie_x16_total', '-') }} Total
+                    {% if sc.get('pcie_x16_comment') %}
+                    <i class="bi bi-info-circle text-info ms-1" style="font-size: 0.8em;"
+                        title="{{ sc.get('pcie_x16_comment') }}"></i>
+                    {% endif %}
+                </div>
+                {% for detail in sc.get('pcie_x16_details', []) %}
+                <div class="small text-muted" style="white-space: nowrap;">{{ detail | safe }}</div>
+                {% endfor %}
+            </td>
             {% endfor %}
         </tr>
         <tr class="table-light">
@@ -142,7 +153,13 @@
             {% for m in mobos %}
             {% set sc = m.specs.get('_scorecard', {}) %}
             <td class="text-center">
-                <div class="fw-bold mb-1">{{ sc.get('m2_total', '-') }} Total</div>
+                <div class="fw-bold mb-1">
+                    {{ sc.get('m2_total', '-') }} Total
+                    {% if sc.get('m2_note') %}
+                    <i class="bi bi-info-circle text-info ms-1" style="font-size: 0.8em;"
+                        title="{{ sc.get('m2_note') }}"></i>
+                    {% endif %}
+                </div>
                 {% for detail in sc.get('m2_details', []) %}
                 <div class="small text-muted" style="white-space: nowrap;">{{ detail }}</div>
                 {% endfor %}
@@ -607,18 +624,24 @@
         </tr>
         <tr>
             <th class="ps-5">x16 Electrical</th>
-            {% for m in mobos %} <td class="text-center small">
-                <div class="d-inline-block text-start">
-                    {{ cell(m.dot.expansion.pcie_slots.physical_x16.electrical_lanes | replace(', ', '<br>') |
+            {% for m in mobos %}
+            {% set sc = m.specs.get('_scorecard', {}) %}
+            <td class="text-center small">
+                <div
+                    class="d-inline-block text-start {% if sc.get('pcie_x16_cpu') and not sc.get('pcie_x16_lanes_html') %}fw-bold{% endif %}">
+                    {{ cell((sc.get('pcie_x16_lanes_html') if sc.get('pcie_x16_lanes_html') else
+                    sc.get('pcie_x16_lanes', '-')) | replace(', ', '<br>') |
                     replace(',', '<br>') | replace(' ', '<br>') | safe ,
-                    m.dot.expansion.pcie_slots.physical_x16.electrical_lanes_comment) }}
+                    sc.get('pcie_x16_comment')) }}
                 </div>
             </td> {% endfor %}
         </tr>
         <tr>
             <th class="ps-5">x16 Total</th>
-            {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.pcie_slots.physical_x16.total }}</td> {%
-            endfor %}
+            {% for m in mobos %}
+            {% set sc = m.specs.get('_scorecard', {}) %}
+            <td class="text-center">{{ sc.get('pcie_x16_total', '-') }}</td>
+            {% endfor %}
         </tr>
         <tr>
             <th class="ps-5">x1/x4 Electrical</th>
@@ -655,8 +678,9 @@
         </tr>
         <tr>
             <th class="ps-5">M.2 (M)</th>
-            {% for m in mobos %} <td class="text-center">{{ m.dot.expansion.storage.pcie_storage.m2_m | replace(' ',
-                '<br>') | safe }}</td> {% endfor %}
+            {% for m in mobos %} <td class="text-center">{{ cell(m.dot.expansion.storage.pcie_storage.m2_m | replace('
+                ',
+                '<br>') | safe, m.dot.expansion.storage.pcie_storage.m2_m_comment) }}</td> {% endfor %}
         </tr>
         <tr>
             <th class="ps-5">Total M.2 (M)</th>

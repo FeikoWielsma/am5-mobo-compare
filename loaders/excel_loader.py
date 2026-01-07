@@ -68,7 +68,8 @@ def load_data():
     
     try:
         print(f"Loading Excel file: {EXCEL_FILE}...")
-        wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
+        # rich_text=True allows reading partially bolded cells as CellRichText objects
+        wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True, rich_text=True)
         
         # Process each sheet
         for sheet_name in SHEETS_TO_LOAD:
@@ -120,10 +121,48 @@ def load_data():
                     # Get cell value
                     value = cell.value
                     key = col_info['key']
-                    record[key] = value
+                    
+                    # Handle RichText / partially bolded cells
+                    if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                        full_str = ""
+                        html_str = ""
+                        has_any_bold = False
+                        for part in value:
+                            text_part = ""
+                            is_part_bold = False
+                            if isinstance(part, str):
+                                text_part = part
+                            elif hasattr(part, 'text'):
+                                text_part = part.text
+                                font_part = getattr(part, 'font', None)
+                                is_part_bold = font_part.bold if font_part else False
+                            
+                            full_str += text_part
+                            if is_part_bold:
+                                # Separate trailing punctuation/whitespace from bold tag
+                                match = re.match(r'^(.*?)(\s*,?\s*)$', text_part)
+                                if match:
+                                    main_text, suffix = match.groups()
+                                    if main_text:
+                                        html_str += f"<b>{main_text}</b>"
+                                    html_str += suffix
+                                else:
+                                    html_str += f"<b>{text_part}</b>"
+                                has_any_bold = True
+                            else:
+                                html_str += text_part
+                                
+                        record[key] = full_str
+                        record[f"{key}_html"] = html_str
+                        if has_any_bold:
+                            record[f"{key}_bold"] = True
+                    else:
+                        record[key] = value
+                        if cell.font and cell.font.bold:
+                            record[f"{key}_bold"] = True
                     
                     # Check if this is the Model column and has a value
-                    if key == 'Model' and value and str(value).strip():
+                    if key == 'Model' and record[key] and str(record[key]).strip():
                         has_model = True
                     
                     # Extract comment if present
@@ -131,13 +170,9 @@ def load_data():
                         try:
                             comment_text = cell.comment.text
                             if comment_text:
-                                # Clean comment text (remove author prefix if present)
                                 comment_text = comment_text.strip()
-                                # Store comment with _comment suffix
-                                comment_key = f"{key}_comment"
-                                record[comment_key] = comment_text
-                        except Exception as e:
-                            # Silently skip if comment extraction fails
+                                record[f"{key}_comment"] = comment_text
+                        except Exception:
                             pass
                 
                 # Only add record if it has a Model (skip empty rows)
@@ -154,6 +189,19 @@ def load_data():
                 brand = clean_record.get('Brand', '')
                 model = clean_record.get('Model', '')
                 chipset = clean_record.get('Chipset', '')
+                
+                # Extract Form Factor
+                form_factor = ""
+                for k, v in clean_record.items():
+                    if k.lower().endswith('|form factor'):
+                        form_factor = v
+                        break
+                if not form_factor:
+                     # Fallback for sheets where it might not be nested or named differently
+                     for k, v in clean_record.items():
+                         if "form factor" in k.lower():
+                             form_factor = v
+                             break
                 
                 # Generate unique ID
                 safe_model = model.replace(' ', '_').replace('/', '-').replace('\\', '-')
@@ -192,6 +240,7 @@ def load_data():
                     'brand': brand,
                     'model': model,
                     'chipset': chipset,
+                    'form_factor': form_factor,
                     'specs': nested_specs
                 }
                 

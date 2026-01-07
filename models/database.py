@@ -93,6 +93,7 @@ class Motherboard(Base):
     brand = Column(String, index=True)
     model = Column(String, index=True)
     chipset = Column(String, index=True)
+    form_factor = Column(String, index=True)
     
     # Single Generic Specs Column containing the entire Unflattened Hierarchy
     specs = Column(JSON)

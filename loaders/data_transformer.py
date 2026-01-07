@@ -99,8 +99,14 @@ def extract_scorecard(record):
             'type_c': {'3.2_5g': 0, '3.2_10g': 0, '3.2_20g': 0, 'usb4_40g': 0}
         },
         'pcie_x16_total': '-',
+        'pcie_x16_cpu': False,
+        'pcie_x16_lanes': '-',
+        'pcie_x16_lanes_html': '',
+        'pcie_x16_details': [],
+        'pcie_x16_comment': '',
         'm2_total': '-',
-        'm2_details': []
+        'm2_details': [],
+        'm2_note': ''
     }
     
     def parse_count(val):
@@ -178,23 +184,78 @@ def extract_scorecard(record):
              scorecard['usb_ports_total'] = str(v).replace('.0', '')
              
         # PCIe
-        if "pcie slots" in k_lower and "x16" in k_lower and "total" in k_lower:
-             scorecard['pcie_x16_total'] = str(v).replace('.0', '')
+        if "pcie slots" in k_lower and "x16" in k_lower:
+            if "total" in k_lower:
+                scorecard['pcie_x16_total'] = str(v).replace('.0', '')
+            if "electrical lanes" in k_lower:
+                if "_bold" in k_lower:
+                    scorecard['pcie_x16_cpu'] = True
+                    # If we already have plain details, bold them now
+                    if scorecard['pcie_x16_details'] and not scorecard.get('pcie_x16_lanes_html'):
+                         scorecard['pcie_x16_details'] = [f"<b>{d}</b>" for d in scorecard['pcie_x16_details']]
+                if "_html" in k_lower:
+                    scorecard['pcie_x16_lanes_html'] = str(v)
+                    # Parse HTML segments for list display
+                    # Example: <b>5x16,</b>3x2 -> ["<b>1x Gen5 x16</b>", "1x Gen3 x2"] 
+                    # Actually, the string from excel_loader is like "<b>4x16,</b>4x4"
+                    # We can split by ',' and handle each part
+                    parts = str(v).split(',')
+                    details = []
+                    is_in_bold = False
+                    for p in parts:
+                        p = p.strip()
+                        if not p: continue
+                        
+                        # Fix tags for this segment
+                        seg = p
+                        if is_in_bold and not seg.startswith('<b>'):
+                            seg = '<b>' + seg
+                        
+                        if '<b>' in seg and '</b>' not in seg:
+                            seg = seg + '</b>'
+                            is_in_bold = True
+                        elif '</b>' in seg and '<b>' not in seg:
+                            # Already handled by is_in_bold check above if it started without <b>
+                            pass
+                        elif '</b>' in seg:
+                            is_in_bold = False
+                        
+                        details.append(seg)
+                    scorecard['pcie_x16_details'] = details
+                elif "_comment" not in k_lower and "_bold" not in k_lower:
+                    scorecard['pcie_x16_lanes'] = str(v)
+                    if not scorecard.get('pcie_x16_details'):
+                        parts = str(v).split(',')
+                        details = [p.strip() for p in parts if p.strip()]
+                        if scorecard.get('pcie_x16_cpu'):
+                            details = [f"<b>{d}</b>" for d in details]
+                        scorecard['pcie_x16_details'] = details
+                if "_comment" in k_lower:
+                    comment = str(v).strip()
+                    if comment:
+                        if scorecard.get('pcie_x16_comment'):
+                            if comment not in scorecard['pcie_x16_comment']:
+                                scorecard['pcie_x16_comment'] += " | " + comment
+                        else:
+                            scorecard['pcie_x16_comment'] = comment
              
         # M.2
         if "storage" in k_lower:
              if "total m.2" in k_lower:
                  scorecard['m2_total'] = str(v).replace('.0', '')
              elif "m.2 (m)" in k_lower and "aic" not in k_lower:
-                 # Parse: "2*5x4 1*4x4" or "2*5x4\n1*4x4"
-                 # regex: (\d+)\*(\d+)x(\d+) (allow whitespace and * or x separator)
-                 matches = re.findall(r'(\d+)\s*[\*x]\s*(\d+)x(\d+)', str(v), re.IGNORECASE)
-                 if matches:
-                     parsed_m2 = []
-                     for m in matches:
-                         count, gen, lanes = m
-                         parsed_m2.append(f"{count}x Gen{gen}x{lanes}")
-                     scorecard['m2_details'] = parsed_m2
+                 if "_comment" in k_lower:
+                     scorecard['m2_note'] = str(v)
+                 else:
+                     # Parse: "2*5x4 1*4x4" or "2*5x4\n1*4x4"
+                     # regex: (\d+)\*(\d+)x(\d+) (allow whitespace and * or x separator)
+                     matches = re.findall(r'(\d+)\s*[\*x]\s*(\d+)x(\d+)', str(v), re.IGNORECASE)
+                     if matches:
+                         parsed_m2 = []
+                         for m in matches:
+                             count, gen, lanes = m
+                             parsed_m2.append(f"{count}x Gen{gen}x{lanes}")
+                         scorecard['m2_details'] = parsed_m2
 
     return scorecard
 

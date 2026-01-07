@@ -38,6 +38,7 @@ def init_db():
                 brand=m['brand'],
                 model=m['model'],
                 chipset=m['chipset'],
+                form_factor=m['form_factor'],
                 specs=m['specs'] # The full hierarchy
             )
             session.add(entry)
