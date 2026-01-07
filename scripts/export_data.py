@@ -16,15 +16,7 @@ def export_to_static():
     mobos = session.query(Motherboard).all()
     mobo_list = []
     for m in mobos:
-        d = {**m.specs}
-        d.update({
-            'id': m.id,
-            'brand': m.brand,
-            'model': m.model,
-            'chipset': m.chipset,
-            'form_factor': m.form_factor
-        })
-        mobo_list.append(d)
+        mobo_list.append(m.to_dict())
     
     with open(os.path.join(data_dir, 'mobos.json'), 'w') as f:
         json.dump(mobo_list, f)

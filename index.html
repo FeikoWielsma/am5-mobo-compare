@@ -310,44 +310,84 @@
 <!-- Scorecard Modal -->
 <div class="modal fade" id="scorecardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title" id="scorecardModalLabel">Motherboard Details</h5>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="scorecardModalLabel">Motherboard Details</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="row">
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <!-- Connectivity -->
                     <div class="col-md-6">
-                        <h6 class="border-bottom pb-2">Connectivity</h6>
-                        <dl class="row mb-0">
-                            <dt class="col-sm-4">LAN</dt>
-                            <dd class="col-sm-8" id="modal-lan">-</dd>
-                            <dt class="col-sm-4">Wireless</dt>
-                            <dd class="col-sm-8" id="modal-wifi">-</dd>
-                            <dt class="col-sm-4">Audio</dt>
-                            <dd class="col-sm-8" id="modal-audio">-</dd>
-                            <dt class="col-sm-4">USB-C Header</dt>
-                            <dd class="col-sm-8" id="modal-usbc">-</dd>
-                        </dl>
+                        <div class="p-3 bg-light rounded h-100">
+                            <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-globe me-2"></i>Connectivity</h6>
+                            <dl class="row mb-0 small">
+                                <dt class="col-sm-4 text-muted">LAN</dt>
+                                <dd class="col-sm-8 fw-bold" id="modal-lan">-</dd>
+                                <dt class="col-sm-4 text-muted">Wireless</dt>
+                                <dd class="col-sm-8" id="modal-wifi">-</dd>
+                                <dt class="col-sm-4 text-muted">Audio</dt>
+                                <dd class="col-sm-8" id="modal-audio">-</dd>
+                                <dt class="col-sm-4 text-muted">USB-C Int.</dt>
+                                <dd class="col-sm-8" id="modal-usbc">-</dd>
+                                <dt class="col-sm-4 text-muted">BIOS Flash</dt>
+                                <dd class="col-sm-8" id="modal-bios">-</dd>
+                            </dl>
+                        </div>
                     </div>
+                    <!-- Power & Cooling -->
                     <div class="col-md-6">
-                        <h6 class="border-bottom pb-2">Power & Cooling</h6>
-                        <dl class="row mb-0">
-                            <dt class="col-sm-4">VRM</dt>
-                            <dd class="col-sm-8" id="modal-vrm">-</dd>
-                            <dt class="col-sm-4">Fan Headers</dt>
-                            <dd class="col-sm-8" id="modal-fans">-</dd>
-                            <dt class="col-sm-4">ARGB</dt>
-                            <dd class="col-sm-8" id="modal-argb">-</dd>
-                            <dt class="col-sm-4">BIOS Flash</dt>
-                            <dd class="col-sm-8" id="modal-bios">-</dd>
-                        </dl>
+                        <div class="p-3 bg-light rounded h-100">
+                            <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-lightning-charge me-2"></i>Power &
+                                Cooling</h6>
+                            <dl class="row mb-0 small">
+                                <dt class="col-sm-4 text-muted">VRM</dt>
+                                <dd class="col-sm-8 fw-bold" id="modal-vrm">-</dd>
+                                <dt class="col-sm-4 text-muted">VCore</dt>
+                                <dd class="col-sm-8 text-muted" id="modal-vcore">-</dd>
+                                <dt class="col-sm-4 text-muted">Fans</dt>
+                                <dd class="col-sm-8" id="modal-fans">-</dd>
+                                <dt class="col-sm-4 text-muted">ARGB</dt>
+                                <dd class="col-sm-8" id="modal-argb">-</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <!-- Storage & Expansion -->
+                    <div class="col-md-12">
+                        <div class="p-3 bg-white border rounded">
+                            <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-cpu me-2"></i>Storage & Expansion</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="text-muted small fw-bold mb-1 uppercase">M.2 Slots</div>
+                                    <div id="modal-m2-list" class="small"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted small fw-bold mb-1 uppercase">PCIe x16</div>
+                                    <div id="modal-pcie-list" class="small"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- USB Rear -->
+                    <div class="col-md-12">
+                        <div class="p-3 bg-dark text-white rounded">
+                            <h6 class="fw-bold mb-2"><i class="bi bi-usb-symbol me-2"></i>Rear USB Configuration</h6>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="border-end pe-3">
+                                    <span class="fs-4 fw-bold" id="modal-usb-total">0</span>
+                                    <div class="small text-muted">Total Ports</div>
+                                </div>
+                                <div id="modal-usb-badges" class="d-flex flex-wrap gap-1">
+                                    <!-- Badges injected by JS -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

@@ -17,15 +17,7 @@ def build_static():
     # Fetch data once
     mobos = []
     for m in service.get_all_mobos():
-        mobo_dict = {**m.specs}
-        mobo_dict.update({
-            'id': m.id,
-            'brand': m.brand,
-            'model': m.model,
-            'chipset': m.chipset,
-            'form_factor': m.form_factor
-        })
-        mobos.append(mobo_dict)
+        mobos.append(m.to_dict())
     
     structure = service.get_structure()
     lan_lookup = service.get_lan_lookup()

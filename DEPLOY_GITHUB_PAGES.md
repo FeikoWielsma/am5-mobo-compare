@@ -18,19 +18,17 @@ You should now have the following new files in your root directory:
 - `static/data/structure.json` (Category headers)
 - `static/data/lan_lookup.json` (LAN speed dictionary)
 
-### 3. Push to GitHub
-Commit and push these files along with your `static/css` and `static/js` folders:
-```bash
-git add index.html compare.html static/
-git commit -m "Deploy static site"
-git push origin main
-```
+### 3. Automatic Deployment (GitHub Actions)
+I've already set up a GitHub Actions workflow for you! 
 
-### 4. Enable GitHub Pages
-1. Go to your repository on GitHub.
-2. Settings > Pages.
-3. Under "Build and deployment", set Source to "Deploy from a branch".
-4. Select "main" and folder "/ (root)".
-5. Click Save.
+Every time you `git push origin main`, GitHub will automatically:
+1. Run a deployment runner.
+2. Package your `index.html`, `compare.html`, and `static/` folder.
+3. Host it live on your GitHub Pages site.
+
+**Note:** Since the Excel file is too large for GitHub, the build currently relies on you committing the updated `static/data/*.json` files whenever you change the source data.
+
+### 4. Direct Manual Push (Optional)
+...
 
 Your site will be live at `https://[username].github.io/[repo-name]/` in a few minutes!
