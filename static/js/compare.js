@@ -64,11 +64,28 @@ function initSearch() {
                     const chipset = m.Chipset || m.chipset;
                     const ff = m.FormFactor || m.form_factor;
 
+                    const getChipsetClass = (c) => {
+                        if (!c) return '';
+                        const clean = c.toLowerCase().replace(/[ ()]/g, '');
+                        return `badge-chipset badge-chipset-${clean}`;
+                    };
+                    const getFFClass = (f) => {
+                        if (!f) return '';
+                        let normalized = f.toLowerCase();
+                        normalized = normalized.replace(/atx-b$/i, 'atx');
+                        normalized = normalized.replace(/bkb itx/i, 'mini-itx');
+                        normalized = normalized.replace(/[μu]-atx-b/i, 'matx');
+                        normalized = normalized.replace(/[μu]-atx/i, 'matx');
+                        normalized = normalized.replace(/e-atx/i, 'eatx');
+                        const clean = normalized.replace(/[ -]/g, '');
+                        return `badge-ff badge-ff-${clean}`;
+                    };
+
                     item.innerHTML = `
                         <div class="fw-bold">${brand} ${model}</div>
                         <div class="mt-1">
-                            <span class="badge ${StaticRenderer.getChipsetClass(chipset)}">${chipset}</span>
-                            <span class="badge ${StaticRenderer.getFFClass(ff)}">${ff || '-'}</span>
+                            <span class="badge ${getChipsetClass(chipset)}">${chipset}</span>
+                            <span class="badge ${getFFClass(ff)}">${ff || '-'}</span>
                         </div>
                     `;
                     item.addEventListener('click', () => {

@@ -217,5 +217,5 @@ __marimo__/
 # Excel Data
 *.xlsx
 ~$*.xlsx
-mobo.db
+# mobo.db is committed for Render deployment
 .vscode/settings.json

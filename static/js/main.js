@@ -1,16 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Static Mode Fallback
-    if (window.IS_STATIC && !window.MOBO_DATA) {
-        console.log("Static mode: Fetching mobos.json...");
-        fetch('static/data/mobos.json')
-            .then(res => res.json())
-            .then(data => {
-                window.MOBO_DATA = data;
-                initApp();
-            })
-            .catch(err => console.error("Failed to load static data:", err));
-        return;
-    } else if (typeof MOBO_DATA !== 'undefined') {
+    if (typeof MOBO_DATA !== 'undefined') {
         initApp();
     }
 
