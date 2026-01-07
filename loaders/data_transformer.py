@@ -16,34 +16,23 @@ import re
 def calculate_lan_score(lan_text, lan_lookup):
     """
     Calculate total LAN speed score based on lookup table.
-    
-    Args:
-        lan_text (str): The raw LAN controller string (e.g. "Realtek RTL8125, Intel I225-V")
-        lan_lookup (dict): Lookup table { 'NORMALIZEDNAME': speed_mbps }
-        
-    Returns:
-        int: Total speed in Mbps
     """
     if not lan_text or not lan_lookup:
         return 0
         
-    # 1. Normalize text (remove non-alphanumeric, uppercase)
-    # matching logic from parsers.js
-    clean_text = re.sub(r'[^A-Z0-9]', '', lan_text.upper())
+    # 1. Normalize text (replace abbreviations before stripping)
+    norm = str(lan_text)
+    norm = re.sub(r'Rltk', 'Realtek', norm, flags=re.IGNORECASE)
+    norm = re.sub(r'AQC113CS', 'AQC113C', norm, flags=re.IGNORECASE)
     
-    # Common abbreviations
-    # In JS: norm.replace(/Rltk/ig, 'Realtek').replace(/AQC113CS/ig, 'AQC113C')
-    # Since we stripped non-alphanumeric, "Rltk" -> "RLTK"
-    clean_text = clean_text.replace("RLTK", "REALTEK")
-    clean_text = clean_text.replace("AQC113CS", "AQC113C")
+    # 2. Strip non-alphanumeric and uppercase
+    clean_text = re.sub(r'[^A-Z0-9]', '', norm.upper())
     
     matches = []
     
-    # 2. Find all potential matches
+    # 3. Find all potential matches
     for name, speed in lan_lookup.items():
-        # key in lookup is likely clean (from excel_loader), but let's ensure
         clean_name = re.sub(r'[^A-Z0-9]', '', name.upper())
-        
         if clean_name in clean_text:
             matches.append({
                 'name': name,
@@ -51,8 +40,7 @@ def calculate_lan_score(lan_text, lan_lookup):
                 'speed': speed
             })
             
-    # 3. Filter out substrings (e.g. ignore "RTL8111" if "RTL8111H" is present)
-    # 3. Filter out substrings (e.g. ignore "RTL8111" if "RTL8111H" is present)
+    # 4. Filter out substrings (e.g. ignore "RTL8111" if "RTL8111H" is present)
     distinct_matches = []
     for m in matches:
         is_substring = False
@@ -66,7 +54,7 @@ def calculate_lan_score(lan_text, lan_lookup):
         if not is_substring:
             distinct_matches.append(m)
             
-    # 4. Sum speeds
+    # 5. Sum speeds
     total_speed = sum(m['speed'] for m in distinct_matches)
     return total_speed
 

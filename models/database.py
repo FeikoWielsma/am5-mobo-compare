@@ -103,6 +103,21 @@ class Motherboard(Base):
         """Returns a DotWrapper around specs for easy template access."""
         return DotWrapper(self.specs if self.specs else {})
 
+    def to_dict(self):
+        """
+        Returns a flat dictionary representation where identity fields 
+        take precedence over specs keys.
+        """
+        data = {**self.specs} if self.specs else {}
+        data.update({
+            'id': self.id,
+            'brand': self.brand,
+            'model': self.model,
+            'chipset': self.chipset,
+            'form_factor': self.form_factor
+        })
+        return data
+
     
 class Structure(Base):
     __tablename__ = 'structure'

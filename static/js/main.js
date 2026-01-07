@@ -810,35 +810,86 @@ document.addEventListener('DOMContentLoaded', function () {
         function showScorecard(id) {
             const m = MOBO_DATA.find(x => String(x.id) === String(id));
             if (!m) return;
-            const sc = (m.specs && m.specs._scorecard) ? m.specs._scorecard : {};
+            const sc = m._scorecard || {};
 
             document.getElementById('scorecardModalLabel').innerText = `${m.brand} ${m.model}`;
 
-            // Helper for boolean/check
             const setVal = (elmId, val) => {
                 const el = document.getElementById(elmId);
                 if (!el) return;
                 el.innerText = val || '-';
             };
-            const setBool = (elmId, val) => {
+
+            const setHtml = (elmId, html) => {
                 const el = document.getElementById(elmId);
                 if (!el) return;
-                if (val === true || val === 'True' || val === 'Yes') {
-                    el.innerHTML = '<i class="bi bi-check-lg text-success h5"></i>';
-                } else {
-                    el.innerHTML = '<i class="bi bi-x-lg text-muted h5"></i>';
-                }
+                el.innerHTML = html || '-';
             };
 
+            const getBoolIcon = (val) => {
+                if (val === true || val === 'True' || val === 'Yes' || val === 1) {
+                    return '<i class="bi bi-check-circle-fill text-success"></i>';
+                }
+                return '<i class="bi bi-x-circle text-muted"></i>';
+            };
+
+            // Connectivity
             setVal('modal-lan', sc.lan_text);
             setVal('modal-wifi', sc.wireless);
             setVal('modal-audio', sc.audio);
-            setBool('modal-usbc', sc.usbc_header);
+            setHtml('modal-usbc', getBoolIcon(sc.usbc_header));
+            setHtml('modal-bios', getBoolIcon(sc.bios_flash_btn));
 
-            setVal('modal-vrm', sc.vrm_text + (sc.vrm_note ? ` (${sc.vrm_note})` : ''));
+            // Power & Cooling
+            setVal('modal-vrm', sc.vrm_text);
+            setVal('modal-vcore', sc.vcore_text);
             setVal('modal-fans', sc.fan_count);
             setVal('modal-argb', sc.argb_count);
-            setBool('modal-bios', sc.bios_flash_btn);
+
+            // Storage (M.2)
+            const m2List = document.getElementById('modal-m2-list');
+            if (m2List) {
+                const details = sc.m2_details || [];
+                m2List.innerHTML = details.length > 0
+                    ? `<div class="fw-bold mb-1">${sc.m2_total} Total</div>` + details.map(d => `<div class="text-muted">• ${d}</div>`).join('')
+                    : '<span class="text-muted">No details available</span>';
+            }
+
+            // Expansion (PCIe)
+            const pcieList = document.getElementById('modal-pcie-list');
+            if (pcieList) {
+                const details = sc.pcie_x16_details || [];
+                pcieList.innerHTML = details.length > 0
+                    ? `<div class="fw-bold mb-1">${sc.pcie_x16_total} Total</div>` + details.map(d => `<div class="text-muted">• ${d}</div>`).join('')
+                    : '<span class="text-muted">No details available</span>';
+            }
+
+            // USB Configuration
+            setVal('modal-usb-total', sc.usb_ports_total);
+            const usbBadgeCont = document.getElementById('modal-usb-badges');
+            if (usbBadgeCont) {
+                usbBadgeCont.innerHTML = '';
+                const usb = sc.usb_details || {};
+
+                const addBadge = (count, label, color) => {
+                    if (!count) return;
+                    const span = document.createElement('span');
+                    span.className = `badge ${color} text-white`;
+                    span.innerText = `${count}x ${label}`;
+                    usbBadgeCont.appendChild(span);
+                };
+
+                const ta = usb.type_a || {};
+                addBadge(ta['2.0'], 'USB 2.0', 'bg-secondary');
+                addBadge(ta['3.2_5g'], '5G', 'bg-info');
+                addBadge(ta['3.2_10g'], '10G', 'bg-primary');
+
+                const tc = usb.type_c || {};
+                addBadge(tc['3.2_5g'], '5G (C)', 'bg-info');
+                addBadge(tc['3.2_10g'], '10G (C)', 'bg-primary');
+                addBadge(tc['3.2_20g'], '20G (C)', 'bg-success');
+                addBadge(tc['usb4_40g'], '40G (USB4)', 'bg-warning text-dark');
+            }
 
             if (bsModal) bsModal.show();
         }

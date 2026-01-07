@@ -22,3 +22,43 @@ class MoboService:
         """Fetches LAN controller lookup table."""
         controllers = self.session.query(LanController).all()
         return {c.name: c.speed for c in controllers}
+
+    def sort_mobos(self, mobos):
+        """Sorts motherboards by Chipset, Form Factor, Brand, and Model."""
+        chipset_order = {
+            'A620': 1, 'A620A': 1, 'A620(A)': 1,
+            'B840': 2,
+            'B650': 3,
+            'B850': 4,
+            'B650E': 5,
+            'X670': 6,
+            'X870': 7,
+            'X670E': 8,
+            'X870E': 9
+        }
+        
+        ff_order = {
+            'E-ATX': 1,
+            'ATX': 2, 'ATX-B': 2,
+            'μ-ATX': 3, 'm-ATX': 3, 'u-ATX': 3, 'μ-ATX-B': 3,
+            'm-ITX': 4, 'BKB ITX': 4
+        }
+        
+        def sort_key(m):
+            c_weight = chipset_order.get(m.chipset, 99)
+            ff_weight = ff_order.get(m.form_factor, 99)
+            brand = (m.brand or "").lower()
+            model = (m.model or "").lower()
+            return (c_weight, ff_weight, brand, model)
+        
+        return sorted(mobos, key=sort_key)
+
+    def get_minimal_mobo(self, m):
+        """Returns a minimal dictionary representation of a motherboard."""
+        return {
+            'id': m.id,
+            'Brand': m.brand,
+            'Model': m.model,
+            'Chipset': m.chipset,
+            'FormFactor': m.form_factor
+        }
