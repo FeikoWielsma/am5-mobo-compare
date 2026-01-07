@@ -11,10 +11,14 @@
         </div>
     </div>
     <div class="col-md-4 text-center">
-        <div class="compare-trigger-area">
+        <div class="compare-trigger-area btn-group">
+            <button class="btn btn-outline-secondary btn-sm" id="selectAllVisibleBtn"
+                title="Select all currently visible motherboards">Select Visible</button>
             <button class="btn btn-primary px-4 shadow-sm" id="compareBtnTop" disabled>
-                Compare Selected (<span id="selectedCountTop">0</span>)
+                Compare (<span id="selectedCountTop">0</span>)
             </button>
+            <button class="btn btn-outline-danger btn-sm" id="clearSelectionTopBtn"
+                title="Clear all selections">Clear</button>
         </div>
     </div>
     <div class="col-md-4 text-end">
@@ -28,40 +32,21 @@
         <thead class="table-dark sticky-top">
             <tr>
                 <th style="width: 50px;">Select</th>
-                <th>Brand</th>
-                <th>Chipset</th>
-                <th>Model</th>
-                <th>Form Factor</th>
-                <!-- Dynamic Column 1 -->
-                <th class="dynamic-col-header" data-col-index="1">
-                    <select class="form-select form-select-sm feature-selector" data-col-index="1">
-                        <option value="">-- Pick Feature 1 --</option>
-                        {%- macro render_options(items, path_labels=[]) -%}
-                        {%- for item in items -%}
-                        {%- if item.children -%}
-                        {%- if path_labels|length == 0 -%}
-                        <optgroup label="{{ item.name }}">
-                            {{ render_options(item.children, [item.name]) }}
-                        </optgroup>
-                        {%- else -%}
-                        {{ render_options(item.children, path_labels + [item.name]) }}
-                        {%- endif -%}
-                        {%- elif item.key -%}
-                        <option value="{{ item.key }}">
-                            {{ (path_labels[1:] + [item.name]) | join(' > ') if path_labels|length > 1 else item.name }}
-                        </option>
-                        {%- endif -%}
-                        {%- endfor -%}
-                        {%- endmacro -%}
-                        {{ render_options(structure) }}
-                    </select>
-                </th>
-                <!-- Dynamic Column 2 -->
-                <th class="dynamic-col-header" data-col-index="2">
-                    <select class="form-select form-select-sm feature-selector" data-col-index="2">
-                        <option value="">-- Pick Feature 2 --</option>
-                        {{ render_options(structure) }}
-                    </select>
+                <th class="sortable" data-sort="brand" style="cursor: pointer;">Brand <span
+                        class="sort-indicator"></span></th>
+                <th class="sortable" data-sort="chipset" style="cursor: pointer;">Chipset <span
+                        class="sort-indicator"></span></th>
+                <th class="sortable" data-sort="form_factor" style="cursor: pointer;">Form Factor <span
+                        class="sort-indicator"></span></th>
+                <th class="sortable" data-sort="model" style="cursor: pointer;">Model <span
+                        class="sort-indicator"></span></th>
+                <!-- Dynamic Columns Container -->
+                <!-- JS will inject headers here -->
+
+                <th id="addColumnHeader" style="width: 50px;" class="text-center align-middle">
+                    <button class="btn btn-sm btn-outline-success" id="addDynamicColBtn" title="Add Column">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
                 </th>
             </tr>
             <!-- Filter Row -->
@@ -82,13 +67,6 @@
                     </div>
                 </td>
                 <td>
-                    <div class="dropdown filter-dropdown" data-col="model">
-                        <button class="btn btn-sm btn-outline-light w-100 dropdown-toggle filter-btn" type="button"
-                            data-bs-toggle="dropdown" data-bs-auto-close="outside">All</button>
-                        <div class="dropdown-menu p-2 shadow"></div>
-                    </div>
-                </td>
-                <td>
                     <div class="dropdown filter-dropdown" data-col="form_factor">
                         <button class="btn btn-sm btn-outline-light w-100 dropdown-toggle filter-btn" type="button"
                             data-bs-toggle="dropdown" data-bs-auto-close="outside">All</button>
@@ -96,19 +74,14 @@
                     </div>
                 </td>
                 <td>
-                    <div class="dropdown filter-dropdown" data-col="dyn1">
+                    <div class="dropdown filter-dropdown" data-col="model">
                         <button class="btn btn-sm btn-outline-light w-100 dropdown-toggle filter-btn" type="button"
                             data-bs-toggle="dropdown" data-bs-auto-close="outside">All</button>
                         <div class="dropdown-menu p-2 shadow"></div>
                     </div>
                 </td>
-                <td>
-                    <div class="dropdown filter-dropdown" data-col="dyn2">
-                        <button class="btn btn-sm btn-outline-light w-100 dropdown-toggle filter-btn" type="button"
-                            data-bs-toggle="dropdown" data-bs-auto-close="outside">All</button>
-                        <div class="dropdown-menu p-2 shadow"></div>
-                    </div>
-                </td>
+                <!-- JS will inject filter cells here -->
+                <td id="addColumnFilterCell"></td>
             </tr>
         </thead>
         <tbody id="moboTableBody">
@@ -124,6 +97,78 @@
         <div>
             <button class="btn btn-outline-light me-2 btn-sm" id="clearSelection">Clear All</button>
             <button class="btn btn-primary" id="compareBtn">Compare Now</button>
+        </div>
+    </div>
+</div>
+
+<!-- Template for Feature Selector (Hidden) -->
+<div style="display: none;">
+    <select id="featureSelectorTemplate">
+        <option value="">-- Pick Feature --</option>
+        {%- macro render_options_tpl(items, path_labels=[]) -%}
+        {%- set excluded_keys = ['brand', 'model', 'chipset', 'form_factor'] -%}
+        {%- for item in items -%}
+        {%- if item.children -%}
+        {%- if path_labels|length == 0 -%}
+        <optgroup label="{{ item.name }}">
+            {{ render_options_tpl(item.children, [item.name]) }}
+        </optgroup>
+        {%- else -%}
+        {{ render_options_tpl(item.children, path_labels + [item.name]) }}
+        {%- endif -%}
+        {%- elif item.key and item.key not in excluded_keys -%}
+        <option value="{{ item.key }}">
+            {{ (path_labels[1:] + [item.name]) | join(' > ') if path_labels|length > 1 else item.name }}
+        </option>
+        {%- endif -%}
+        {%- endfor -%}
+        {%- endmacro -%}
+        {{ render_options_tpl(structure) }}
+    </select>
+</div>
+
+<!-- Scorecard Modal -->
+<div class="modal fade" id="scorecardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="scorecardModalLabel">Motherboard Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2">Connectivity</h6>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">LAN</dt>
+                            <dd class="col-sm-8" id="modal-lan">-</dd>
+                            <dt class="col-sm-4">Wireless</dt>
+                            <dd class="col-sm-8" id="modal-wifi">-</dd>
+                            <dt class="col-sm-4">Audio</dt>
+                            <dd class="col-sm-8" id="modal-audio">-</dd>
+                            <dt class="col-sm-4">USB-C Header</dt>
+                            <dd class="col-sm-8" id="modal-usbc">-</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2">Power & Cooling</h6>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">VRM</dt>
+                            <dd class="col-sm-8" id="modal-vrm">-</dd>
+                            <dt class="col-sm-4">Fan Headers</dt>
+                            <dd class="col-sm-8" id="modal-fans">-</dd>
+                            <dt class="col-sm-4">ARGB</dt>
+                            <dd class="col-sm-8" id="modal-argb">-</dd>
+                            <dt class="col-sm-4">BIOS Flash</dt>
+                            <dd class="col-sm-8" id="modal-bios">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
