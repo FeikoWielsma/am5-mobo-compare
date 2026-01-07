@@ -11,6 +11,194 @@ Functions:
 """
 
 
+import re
+
+def calculate_lan_score(lan_text, lan_lookup):
+    """
+    Calculate total LAN speed score based on lookup table.
+    
+    Args:
+        lan_text (str): The raw LAN controller string (e.g. "Realtek RTL8125, Intel I225-V")
+        lan_lookup (dict): Lookup table { 'NORMALIZEDNAME': speed_mbps }
+        
+    Returns:
+        int: Total speed in Mbps
+    """
+    if not lan_text or not lan_lookup:
+        return 0
+        
+    # 1. Normalize text (remove non-alphanumeric, uppercase)
+    # matching logic from parsers.js
+    clean_text = re.sub(r'[^A-Z0-9]', '', lan_text.upper())
+    
+    # Common abbreviations
+    # In JS: norm.replace(/Rltk/ig, 'Realtek').replace(/AQC113CS/ig, 'AQC113C')
+    # Since we stripped non-alphanumeric, "Rltk" -> "RLTK"
+    clean_text = clean_text.replace("RLTK", "REALTEK")
+    clean_text = clean_text.replace("AQC113CS", "AQC113C")
+    
+    matches = []
+    
+    # 2. Find all potential matches
+    for name, speed in lan_lookup.items():
+        # key in lookup is likely clean (from excel_loader), but let's ensure
+        clean_name = re.sub(r'[^A-Z0-9]', '', name.upper())
+        
+        if clean_name in clean_text:
+            matches.append({
+                'name': name,
+                'clean': clean_name,
+                'speed': speed
+            })
+            
+    # 3. Filter out substrings (e.g. ignore "RTL8111" if "RTL8111H" is present)
+    # 3. Filter out substrings (e.g. ignore "RTL8111" if "RTL8111H" is present)
+    distinct_matches = []
+    for m in matches:
+        is_substring = False
+        for other in matches:
+            if other is m:
+                continue
+            if m['clean'] in other['clean']:
+                is_substring = True
+                break
+        
+        if not is_substring:
+            distinct_matches.append(m)
+            
+    # 4. Sum speeds
+    total_speed = sum(m['speed'] for m in distinct_matches)
+    return total_speed
+
+
+def extract_scorecard(record):
+    """
+    Extracts key specifications for the summary scorecard.
+    
+    Args:
+        record (dict): Flat dictionary of motherboard data (clean_record)
+        
+    Returns:
+        dict: Scorecard data with key specs
+    """
+    scorecard = {
+        'lan_text': '-',
+        'wireless': '-',
+        'audio': '-',
+        'bios_flash_btn': False,
+        'vrm_text': '-',
+        'fan_count': 0,
+        'argb_count': 0,
+        'rgb_count': 0,
+        'usbc_header': False,
+        'vcore_text': '-',
+        'vrm_note': '',
+        'usb_ports_total': '-',
+        'usb_details': {
+            'type_a': {'2.0': 0, '3.2_5g': 0, '3.2_10g': 0},
+            'type_c': {'3.2_5g': 0, '3.2_10g': 0, '3.2_20g': 0, 'usb4_40g': 0}
+        },
+        'pcie_x16_total': '-',
+        'm2_total': '-',
+        'm2_details': []
+    }
+    
+    def parse_count(val):
+        if not val or val == '-':
+            return 0
+        try:
+            return int(float(val))
+        except:
+            return 0
+
+    for k, v in record.items():
+        k_lower = k.lower()
+        if not v or v == '-':
+            continue
+            
+        # Networking
+        if "networking" in k_lower:
+            if "lan" in k_lower and ("controller" in k_lower or "ethernet" in k_lower):
+                scorecard['lan_text'] = str(v)
+            elif "wireless" in k_lower and "comment" not in k_lower:
+                scorecard['wireless'] = str(v)
+        
+        # Audio
+        if "audio" in k_lower and "codec" in k_lower and "comment" not in k_lower:
+            scorecard['audio'] = str(v)
+            
+        # BIOS Flash
+        if "bios flash" in k_lower and "comment" not in k_lower:
+             scorecard['bios_flash_btn'] = True
+                
+        if "phase config" in k_lower:
+            if "comment" in k_lower:
+                scorecard['vrm_note'] = (scorecard['vrm_note'] + "\n" + str(v)).strip()
+            else:
+                scorecard['vrm_text'] = str(v)
+                
+        # VRM VCore
+        if "vrm (vcore)" in k_lower:
+            if "comment" in k_lower:
+                scorecard['vrm_note'] = (scorecard['vrm_note'] + "\n" + str(v)).strip()
+            else:
+                scorecard['vcore_text'] = str(v)
+            
+        # Fans
+        if "fan/pump headers" in k_lower:
+            scorecard['fan_count'] = parse_count(v)
+            
+        # RGB
+        if "argb" in k_lower or "3-pin" in k_lower:
+            if "comment" not in k_lower:
+                scorecard['argb_count'] = parse_count(v)
+        if "rgb" in k_lower and "argb" not in k_lower and "4-pin" in k_lower:
+            if "comment" not in k_lower:
+                scorecard['rgb_count'] = parse_count(v)
+                
+        # USB-C Header
+        if ("usb-c" in k_lower or "type-c" in k_lower) and "header" in k_lower:
+             scorecard['usbc_header'] = True
+             
+        # USB Rear Details
+        if "rear" in k_lower and "usb" in k_lower:
+            val_int = parse_count(v)
+            if "type a" in k_lower:
+                if "2.0" in k_lower: scorecard['usb_details']['type_a']['2.0'] = val_int
+                elif "5gbps" in k_lower: scorecard['usb_details']['type_a']['3.2_5g'] = val_int
+                elif "10gbps" in k_lower: scorecard['usb_details']['type_a']['3.2_10g'] = val_int
+            elif "type c" in k_lower:
+                if "5gbps" in k_lower: scorecard['usb_details']['type_c']['3.2_5g'] = val_int
+                elif "10gbps" in k_lower: scorecard['usb_details']['type_c']['3.2_10g'] = val_int
+                elif "20gbps" in k_lower: scorecard['usb_details']['type_c']['3.2_20g'] = val_int
+                elif "usb4" in k_lower or "40gbps" in k_lower: scorecard['usb_details']['type_c']['usb4_40g'] = val_int
+
+        # USB Ports Total
+        if "rear" in k_lower and "usb" in k_lower and "total" in k_lower:
+             scorecard['usb_ports_total'] = str(v).replace('.0', '')
+             
+        # PCIe
+        if "pcie slots" in k_lower and "x16" in k_lower and "total" in k_lower:
+             scorecard['pcie_x16_total'] = str(v).replace('.0', '')
+             
+        # M.2
+        if "storage" in k_lower:
+             if "total m.2" in k_lower:
+                 scorecard['m2_total'] = str(v).replace('.0', '')
+             elif "m.2 (m)" in k_lower and "aic" not in k_lower:
+                 # Parse: "2*5x4 1*4x4" or "2*5x4\n1*4x4"
+                 # regex: (\d+)\*(\d+)x(\d+) (allow whitespace and * or x separator)
+                 matches = re.findall(r'(\d+)\s*[\*x]\s*(\d+)x(\d+)', str(v), re.IGNORECASE)
+                 if matches:
+                     parsed_m2 = []
+                     for m in matches:
+                         count, gen, lanes = m
+                         parsed_m2.append(f"{count}x Gen{gen}x{lanes}")
+                     scorecard['m2_details'] = parsed_m2
+
+    return scorecard
+
+
 def unflatten_record(record):
     """
     Convert pipe-delimited flat keys into nested dictionary structure.

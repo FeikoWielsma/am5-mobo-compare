@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import Motherboard, Structure
+from models import Motherboard, Structure, LanController
 
 class MoboService:
     def __init__(self, session: Session):
@@ -17,3 +17,8 @@ class MoboService:
     def get_mobos_by_ids(self, ids):
         """Returns motherboards matching specific IDs."""
         return self.session.query(Motherboard).filter(Motherboard.id.in_(ids)).all()
+
+    def get_lan_lookup(self):
+        """Fetches LAN controller lookup table."""
+        controllers = self.session.query(LanController).all()
+        return {c.name: c.speed for c in controllers}

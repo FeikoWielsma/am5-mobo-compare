@@ -109,6 +109,12 @@ class Structure(Base):
     id = Column(Integer, primary_key=True)
     content = Column(JSON) # Stores the Header Tree
 
+class LanController(Base):
+    __tablename__ = 'lan_controllers'
+    
+    name = Column(String, primary_key=True)  # Normalized name (e.g. "REALTEKRTL8125")
+    speed = Column(Integer)                  # Speed in Mbps (e.g. 2500)
+
 def get_engine(db_url='sqlite:///mobo.db'):
     return create_engine(db_url)
 

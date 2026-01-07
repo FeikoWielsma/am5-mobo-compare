@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 # Add project root to sys.path
 sys.path.append(os.getcwd())
 
-from models import get_engine, Base, Motherboard, Structure
+from models import get_engine, Base, Motherboard, Structure, LanController
 from loaders import load_data
+from loaders.excel_loader import load_lan_lookup
 
 def init_db():
     print("Initializing Database...")
@@ -18,11 +19,12 @@ def init_db():
     try:
         # load_data now returns list of dicts with 'specs' key populated
         mobo_data, header_tree = load_data()
+        lan_data = load_lan_lookup()
     except Exception as e:
         print(f"Error loading data: {e}")
         return
 
-    print(f"Inserting {len(mobo_data)} motherboards and structure...")
+    print(f"Inserting {len(mobo_data)} motherboards, structure, and {len(lan_data)} LAN controllers...")
     
     with Session(engine) as session:
         # Insert Structure
@@ -39,6 +41,11 @@ def init_db():
                 specs=m['specs'] # The full hierarchy
             )
             session.add(entry)
+            
+        # Insert LAN Controllers
+        for name, speed in lan_data.items():
+            lan_entry = LanController(name=name, speed=speed)
+            session.add(lan_entry)
         
         session.commit()
     

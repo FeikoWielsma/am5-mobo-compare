@@ -1,0 +1,23 @@
+{# Macro for displaying values with optional comment tooltips #}
+{% macro cell(value, comment='', score=None) %}
+<span {% if score is not none %}data-score="{{ score }}" data-server-score="true" {% endif %} {% if comment
+    %}data-bs-toggle="tooltip" data-bs-html="true" title="{{ comment | replace('\n', '<br>') }}" {% endif %}>
+    {{ value or '-' }}
+    {% if comment %}
+    <i class="bi bi-info-circle-fill text-info ms-1" style="font-size: 0.75em;"></i>
+    {% endif %}
+</span>
+{% endmacro %}
+
+{# Macro for boolean warning check #}
+{% macro warning_check(value, warning_if_false=True) %}
+{% if value %}
+<i class="bi bi-check-circle-fill text-success"></i>
+{% else %}
+{% if warning_if_false %}
+<i class="bi bi-exclamation-triangle-fill text-warning" title="Missing feature"></i>
+{% else %}
+<i class="bi bi-x-circle text-muted"></i>
+{% endif %}
+{% endif %}
+{% endmacro %}

@@ -40,7 +40,7 @@ def index():
         mobos.append(mobo_dict)
     return render_template('index.html', mobos=mobos)
 
-from loaders.excel_loader import load_lan_lookup
+
 
 @app.route('/compare')
 def compare():
@@ -59,7 +59,7 @@ def compare():
     structure = service.get_structure()
     
     # Get LAN Lookup
-    lan_lookup = load_lan_lookup()
+    lan_lookup = service.get_lan_lookup()
     
     return render_template('compare.html', mobos=selected_mobos, structure=structure, lan_lookup=lan_lookup)
 

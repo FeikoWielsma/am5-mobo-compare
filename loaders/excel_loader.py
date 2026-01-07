@@ -25,7 +25,9 @@ from .header_parser import (
 from .data_transformer import (
     unflatten_record,
     build_header_tree,
-    clean_record_values
+    clean_record_values,
+    calculate_lan_score,
+    extract_scorecard
 )
 
 # Suppress openpyxl warnings about styles/formatting (we only read data values)
@@ -160,6 +162,30 @@ def load_data():
                 # Unflatten into hierarchical structure
                 nested_specs = unflatten_record(clean_record)
                 
+                # Calculate and inject LAN Score (server-side)
+                # Find "LAN Controller" value. Path: Networking -> LAN Controller
+                # Since keys vary, we check the flat record first or navigate nested.
+                # Flat record keys are like "Networking|LAN Controller"
+                
+                lan_text = ""
+                # Try to find LAN/Ethernet key in flat dict
+                # Key is usually "General|Networking|Ethernet|LAN" or contains "LAN"
+                for k, v in clean_record.items():
+                    if "Networking" in k and ("LAN" in k or "Ethernet" in k):
+                        lan_text = v
+                        break
+                
+                # Load lookup (cached)
+                lan_lookup = load_lan_lookup()
+                lan_score = calculate_lan_score(lan_text, lan_lookup)
+                
+                # Inject into nested specs
+                nested_specs['_lan_score'] = lan_score
+                
+                # Extract Scorecard Data
+                scorecard = extract_scorecard(clean_record)
+                nested_specs['_scorecard'] = scorecard
+                
                 # Create motherboard record
                 mobo_record = {
                     'id': unique_id,
@@ -183,12 +209,16 @@ def load_data():
     return all_mobos, final_header_tree
 
 
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
 def load_lan_lookup():
     """
     Load LAN Controller speed mapping from the 'About' sheet.
     Range F8:G20.
     Returns: dict { 'normalized_name': speed_in_mbps }
     """
+    print("Loading LAN lookup (uncached)...")
     try:
         wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
         if "About" not in wb.sheetnames:
