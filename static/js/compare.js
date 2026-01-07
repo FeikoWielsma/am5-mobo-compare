@@ -15,42 +15,9 @@ let collapsedSubsections = new Set();
 let allMobos = []; // Store fetched mobos for search
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.IS_STATIC) {
-        initStaticMode();
-    } else {
-        initStandardMode();
-    }
+    initStandardMode();
 });
 
-function initStaticMode() {
-    console.log("Static Mode: Initializing comparison...");
-
-    // Fetch all needed chunks
-    Promise.all([
-        fetch('static/data/mobos.json').then(r => r.json()),
-        fetch('static/data/structure.json').then(r => r.json()),
-        fetch('static/data/lan_lookup.json').then(r => r.json())
-    ]).then(([mobos, structure, lanLookup]) => {
-        allMobos = mobos;
-        window.LAN_SCORES = lanLookup;
-
-        // Find which mobos to compare from URL
-        const params = new URLSearchParams(window.location.search);
-        const ids = (params.get('ids') || '').split(',').map(s => s.trim()).filter(s => s);
-
-        if (ids.length > 0) {
-            const selected = mobos.filter(m => ids.includes(String(m.id)));
-            // Sorting logic (simplified or ported if needed, but let's assume pre-sorted or just use what we have)
-            const tableContainer = document.querySelector('.table-container .table');
-            if (tableContainer && window.StaticRenderer) {
-                StaticRenderer.renderCompareTable(tableContainer, selected, structure);
-            }
-        }
-
-        bindEvents();
-        initSearch();
-    }).catch(err => console.error("Static Mode Error:", err));
-}
 
 function initStandardMode() {
     // Initial Bind
@@ -217,7 +184,9 @@ function removeMobo(id) {
  * Update URL and Fetch new table
  */
 function updateComparison(ids) {
-    const newUrl = `${window.location.pathname}?ids=${ids.join(',')}`;
+    const params = new URLSearchParams(window.location.search);
+    params.set('ids', ids.join(','));
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
 
     // Push State
     history.pushState({ ids: ids }, '', newUrl);
@@ -226,7 +195,6 @@ function updateComparison(ids) {
     fetchTable(newUrl);
 }
 
-// Handle Browser Back/Forward
 window.addEventListener('popstate', (e) => {
     fetchTable(window.location.href);
 });
