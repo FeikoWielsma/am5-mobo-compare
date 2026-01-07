@@ -3,33 +3,41 @@
 
 {% block content %}
 <!-- Search and Stats -->
-<div class="row mb-3 align-items-center">
-    <div class="col-md-4">
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" id="globalSearch" class="form-control" placeholder="Global search...">
+<!-- Search and Stats -->
+<!-- Search and Stats -->
+<div class="p-2 bg-light border-bottom mb-3">
+    <div class="row align-items-center g-2">
+        <div class="col-auto">
+            <a href="/" class="text-decoration-none text-dark">
+                <h5 class="mb-0 fw-bold">AM5 DB</h5>
+            </a>
         </div>
-    </div>
-    <div class="col-md-4 text-center">
-        <div class="compare-trigger-area btn-group">
-            <button class="btn btn-outline-secondary btn-sm" id="selectAllVisibleBtn"
-                title="Select all currently visible motherboards">Select Visible</button>
-            <button class="btn btn-primary px-4 shadow-sm" id="compareBtnTop" disabled>
-                Compare (<span id="selectedCountTop">0</span>)
-            </button>
-            <button class="btn btn-outline-danger btn-sm" id="clearSelectionTopBtn"
-                title="Clear all selections">Clear</button>
+        <div class="col-md-4">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="globalSearch" class="form-control" placeholder="Global search...">
+            </div>
         </div>
-    </div>
-    <div class="col-md-4 text-end">
-        <span class="badge bg-light text-dark border p-2" id="countDisplay">{{ mobos|length }} motherboards
-            loaded</span>
+        <div class="col text-center">
+            <div class="compare-trigger-area btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="selectAllVisibleBtn"
+                    title="Select all currently visible motherboards">Select Visible</button>
+                <button class="btn btn-primary px-4 shadow-sm" id="compareBtnTop" disabled>
+                    Compare (<span id="selectedCountTop">0</span>)
+                </button>
+                <button class="btn btn-outline-danger" id="clearSelectionTopBtn"
+                    title="Clear all selections">Clear</button>
+            </div>
+        </div>
+        <div class="col-auto text-end">
+            <span class="badge bg-light text-dark border p-2" id="countDisplay">{{ mobos|length }} mobos</span>
+        </div>
     </div>
 </div>
 
 <div class="table-container shadow-sm rounded border">
     <table class="table table-hover mb-0" id="moboTable">
-        <thead class="table-dark sticky-top">
+        <thead class="table-dark sticky-header">
             <tr>
                 <th style="width: 50px;">Select</th>
                 <th class="sortable" data-sort="brand" style="cursor: pointer;">Brand <span

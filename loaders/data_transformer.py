@@ -373,6 +373,14 @@ def build_header_tree(columns_info):
         return new_node
 
     for col in columns_info:
+        # Normalize keys/aliases (Consistency with unflatten_record)
+        key = col['key']
+        if "Lane-sharing" in key and "bifurcation" in key:
+            # We must also update the path because the tree is built from path components
+            col['path'] = ["Notes"] 
+            col['name'] = "Details"
+            col['key'] = "Notes|Details"
+
         # Build full path: parents + leaf
         full_path = col['path'] + [col['name']]
         

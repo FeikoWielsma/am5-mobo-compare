@@ -35,11 +35,24 @@
 }
 
 /* Table Container: To make sticky headers work reliably with horizontal scroll */
+/* Global Layout */
+html,
+body {
+    height: 100vh;
+    overflow: hidden;
+    /* Prevent body scroll, let table scroll */
+}
+
+/* Table Container: To make sticky headers work reliably with horizontal scroll */
 .table-container {
     position: relative;
-    max-height: 85vh;
+    flex-grow: 1;
     overflow: auto;
     border: 1px solid #dee2e6;
+    /* Remove rounding bottom corners to flush with screen edge if desired, 
+       but keeping rounding is nicer if there is padding. 
+       Let's keep rounded but ensure it fills space. */
+    border-radius: 0.375rem;
 }
 
 /* Sticky Headers: Inside the scrollable container */
@@ -50,7 +63,18 @@
     background-color: #343a40 !important;
     color: white !important;
     box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-    background-clip: padding-box;
+}
+
+/* Sticky Filter Row */
+.sticky-header .filter-row td {
+    position: sticky;
+    top: 45px;
+    /* Height of the main header row */
+    z-index: 1040;
+    background-color: #6c757d;
+    /* Matches bg-secondary */
+    color: white;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Category Headers */

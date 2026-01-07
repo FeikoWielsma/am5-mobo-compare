@@ -209,21 +209,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (currentFilters.model.size > 0 && !currentFilters.model.has(String(m.model))) return false;
                 if (currentFilters.form_factor.size > 0 && !currentFilters.form_factor.has(String(m.form_factor))) return false;
 
-                if (dynamicFeatureKeys[1] && currentFilters.dyn1.size > 0) {
-                    const val = String(getNestedValue(m, dynamicFeatureKeys[1]));
-                    if (!currentFilters.dyn1.has(val)) return false;
-                }
-                if (dynamicFeatureKeys[2] && currentFilters.dyn2.size > 0) {
-                    const val = String(getNestedValue(m, dynamicFeatureKeys[2]));
-                    if (!currentFilters.dyn2.has(val)) return false;
-                }
-                if (dynamicFeatureKeys[3] && currentFilters.dyn3.size > 0) {
-                    const val = String(getNestedValue(m, dynamicFeatureKeys[3]));
-                    if (!currentFilters.dyn3.has(val)) return false;
-                }
-                if (dynamicFeatureKeys[4] && currentFilters.dyn4.size > 0) {
-                    const val = String(getNestedValue(m, dynamicFeatureKeys[4]));
-                    if (!currentFilters.dyn4.has(val)) return false;
+                // Dynamic columns filtering
+                for (const k in dynamicFeatureKeys) {
+                    const colKey = `dyn${k}`;
+                    if (currentFilters[colKey] && currentFilters[colKey].size > 0) {
+                        const val = String(getNestedValue(m, dynamicFeatureKeys[k]));
+                        if (!currentFilters[colKey].has(val)) return false;
+                    }
                 }
                 return true;
             });
@@ -328,10 +320,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 const th = document.createElement('th');
                 th.className = 'dynamic-col-header';
                 th.dataset.colIndex = idx;
+
+                const currentVal = dynamicFeatureKeys[idx] || '';
+                const displayLabel = currentVal ? currentVal.split('|').pop() : 'Select...';
+
                 th.innerHTML = `
                     <div class="d-flex align-items-center gap-2">
-                        <div class="flex-grow-1">
-                             <select class="form-select form-select-sm feature-selector" data-col-index="${idx}">
+                        <div class="flex-grow-1 position-relative" style="min-width: 0;">
+                             <!-- Visible Label (Mask) -->
+                             <div class="form-select form-select-sm feature-label-mask text-truncate pe-4" 
+                                  style="background-color: #fff;">${displayLabel}</div>
+                             
+                             <!-- Hidden Interactive Select -->
+                             <select class="form-select form-select-sm feature-selector position-absolute top-0 start-0 opacity-0" 
+                                     data-col-index="${idx}" style="cursor: pointer;">
                                 ${template.innerHTML}
                              </select>
                         </div>
@@ -346,11 +348,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Set selected value
                 const sel = th.querySelector('select');
-                sel.value = dynamicFeatureKeys[idx] || '';
+                const label = th.querySelector('.feature-label-mask');
+                sel.value = currentVal;
 
                 // Bind Select Change
                 sel.addEventListener('change', (e) => {
-                    dynamicFeatureKeys[idx] = e.target.value;
+                    const newVal = e.target.value;
+                    dynamicFeatureKeys[idx] = newVal;
+
+                    // Update mask label
+                    label.innerText = newVal ? newVal.split('|').pop() : 'Select...';
+
+                    // Reset filter for this specific column
+                    const dropdown = document.querySelector(`.filter-dropdown[data-col="${colKey}"]`);
+                    if (dropdown) {
+                        // Clear existing filter selection
+                        if (currentFilters[colKey]) currentFilters[colKey].clear();
+
+                        // Force re-initialization of menu
+                        delete dropdown.dataset.initialized;
+
+                        // Re-render menu content immediately
+                        initFilterMenus();
+                    }
+
                     renderTable();
                 });
 
@@ -437,11 +458,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (filterSet.size === 0) continue;
 
                         let val;
-                        if (col === 'dyn1') val = dynamicFeatureKeys[1] ? String(getNestedValue(m, dynamicFeatureKeys[1])) : null;
-                        else if (col === 'dyn2') val = dynamicFeatureKeys[2] ? String(getNestedValue(m, dynamicFeatureKeys[2])) : null;
-                        else if (col === 'dyn3') val = dynamicFeatureKeys[3] ? String(getNestedValue(m, dynamicFeatureKeys[3])) : null;
-                        else if (col === 'dyn4') val = dynamicFeatureKeys[4] ? String(getNestedValue(m, dynamicFeatureKeys[4])) : null;
-                        else val = String(m[col]);
+                        if (col.startsWith('dyn')) {
+                            const idx = parseInt(col.substring(3));
+                            val = dynamicFeatureKeys[idx] ? String(getNestedValue(m, dynamicFeatureKeys[idx])) : null;
+                        } else {
+                            val = String(m[col]);
+                        }
 
                         if (!filterSet.has(val)) return false;
                     }
@@ -451,11 +473,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const availableValues = new Set();
                 subset.forEach(m => {
                     let val;
-                    if (targetCol === 'dyn1') val = dynamicFeatureKeys[1] ? String(getNestedValue(m, dynamicFeatureKeys[1])) : null;
-                    else if (targetCol === 'dyn2') val = dynamicFeatureKeys[2] ? String(getNestedValue(m, dynamicFeatureKeys[2])) : null;
-                    else if (targetCol === 'dyn3') val = dynamicFeatureKeys[3] ? String(getNestedValue(m, dynamicFeatureKeys[3])) : null;
-                    else if (targetCol === 'dyn4') val = dynamicFeatureKeys[4] ? String(getNestedValue(m, dynamicFeatureKeys[4])) : null;
-                    else val = String(m[targetCol]);
+                    if (targetCol.startsWith('dyn')) {
+                        const idx = parseInt(targetCol.substring(3));
+                        val = dynamicFeatureKeys[idx] ? String(getNestedValue(m, dynamicFeatureKeys[idx])) : null;
+                    } else {
+                        val = String(m[targetCol]);
+                    }
                     if (val !== null && val !== undefined) availableValues.add(val);
                 });
 
@@ -497,17 +520,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function initFilterMenus() {
             document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+                // Skip if already initialized (prevents resetting state/listeners on static columns)
+                if (dropdown.dataset.initialized === 'true') return;
+
                 const col = dropdown.getAttribute('data-col');
                 const menu = dropdown.querySelector('.dropdown-menu');
 
                 let values = new Set();
                 MOBO_DATA.forEach(m => {
                     let val;
-                    if (col === 'dyn1') val = dynamicFeatureKeys[1] ? getNestedValue(m, dynamicFeatureKeys[1]) : null;
-                    else if (col === 'dyn2') val = dynamicFeatureKeys[2] ? getNestedValue(m, dynamicFeatureKeys[2]) : null;
-                    else if (col === 'dyn3') val = dynamicFeatureKeys[3] ? getNestedValue(m, dynamicFeatureKeys[3]) : null;
-                    else if (col === 'dyn4') val = dynamicFeatureKeys[4] ? getNestedValue(m, dynamicFeatureKeys[4]) : null;
-                    else val = m[col];
+                    if (col.startsWith('dyn')) {
+                        const idx = parseInt(col.substring(3));
+                        val = dynamicFeatureKeys[idx] ? getNestedValue(m, dynamicFeatureKeys[idx]) : null;
+                    } else {
+                        val = m[col];
+                    }
                     if (val !== null && val !== undefined) values.add(String(val));
                 });
 
@@ -584,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 sortedValues.forEach(v => {
                     let count = 0;
                     if (col.startsWith('dyn')) {
-                        const idx = col.replace('dyn', '');
+                        const idx = parseInt(col.replace('dyn', ''));
                         count = MOBO_DATA.filter(m => String(getNestedValue(m, dynamicFeatureKeys[idx])) === v).length;
                     } else {
                         count = MOBO_DATA.filter(m => String(m[col]) === v).length;
@@ -599,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="filter-options-list px-2" style="max-height: 250px; overflow-y: auto;">
                     ${sortedValues.map(v => `
                         <label class="filter-option" style="display: flex; align-items: center;">
-                            <input type="checkbox" class="filter-cb" value="${v}" ${currentFilters[col].has(v) ? 'checked' : ''}>
+                            <input type="checkbox" class="filter-cb" value="${v}" ${currentFilters[col] && currentFilters[col].has(v) ? 'checked' : ''}>
                             <span class="ms-2 flex-grow-1">${v}</span>
                             <span class="badge bg-secondary bg-opacity-25 text-muted ms-2" style="font-size: 0.7rem;">${counts.get(v)}</span>
                         </label>
@@ -661,6 +688,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                     renderTable();
                 };
+
+                // Mark as initialized
+                dropdown.dataset.initialized = 'true';
             });
         }
 
