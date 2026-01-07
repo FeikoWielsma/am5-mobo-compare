@@ -694,5 +694,10 @@
 {% endblock %}
 
 {% block scripts %}
+
+<script>
+    // Embed LAN Lookup from backend
+    const LAN_SCORES = {{ lan_lookup | tojson | safe }};
+</script>
 <script src="{{ url_for('static', filename='js/compare.js') }}"></script>
 {% endblock %}

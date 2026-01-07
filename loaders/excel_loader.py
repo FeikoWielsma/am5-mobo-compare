@@ -14,6 +14,7 @@ Functions:
 import pandas as pd
 import openpyxl
 import warnings
+import re
 
 from .config import EXCEL_FILE, SHEETS_TO_LOAD, SKIP_HEADER_PATTERNS
 from .header_parser import (
@@ -180,6 +181,72 @@ def load_data():
     
     print(f"\nTotal motherboards loaded: {len(all_mobos)}")
     return all_mobos, final_header_tree
+
+
+def load_lan_lookup():
+    """
+    Load LAN Controller speed mapping from the 'About' sheet.
+    Range F8:G20.
+    Returns: dict { 'normalized_name': speed_in_mbps }
+    """
+    try:
+        wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
+        if "About" not in wb.sheetnames:
+            print("Warning: 'About' sheet for LAN lookup not found.")
+            return {}
+        
+        ws = wb["About"]
+        lookup = {}
+        
+        # Rows 8 to 20 approx, but let's go until empty
+        # F is col 6, G is col 7
+        for row in range(8, 25): # Safety buffer
+            name_cell = ws.cell(row=row, column=6)
+            speed_cell = ws.cell(row=row, column=7)
+            
+            name = name_cell.value
+            speed_str = speed_cell.value
+            
+            if not name:
+                continue
+                
+            name = str(name).strip()
+            if not speed_str:
+                continue
+                
+            speed_str = str(speed_str).upper()
+            
+            # Parse speed
+            # "Double 25G" -> 50000
+            # "2.5G" -> 2500
+            # "1G" -> 1000
+            
+            multiplier = 1
+            if "DOUBLE" in speed_str or "DUAL" in speed_str:
+                multiplier = 2
+            
+            base_speed = 0
+            if "25G" in speed_str:
+                base_speed = 25000
+            elif "10G" in speed_str:
+                base_speed = 10000
+            elif "5G" in speed_str:
+                base_speed = 5000
+            elif "2.5G" in speed_str:
+                base_speed = 2500
+            elif "1G" in speed_str:
+                base_speed = 1000
+            
+            total_speed = base_speed * multiplier
+            
+            if total_speed > 0:
+                lookup[name] = total_speed
+                
+        return lookup
+        
+    except Exception as e:
+        print(f"Error loading LAN lookup: {e}")
+        return {}
 
 
 if __name__ == "__main__":

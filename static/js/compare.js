@@ -642,6 +642,100 @@ function updateParentSectionBadges() {
 function parseValue(text, fieldName) {
     if (!text || text === '-' || text === '') return null;
 
+    // Custom LAN Controller parsing
+    // Uses global LAN_SCORES injected from backend
+    if (fieldName && fieldName.includes('LAN Controller') && typeof LAN_SCORES !== 'undefined') {
+        let totalSpeed = 0;
+        const normalizedText = text.toUpperCase();
+        let matched = false;
+
+        // Iterate through all known controllers and check if present
+        for (const [controller, speed] of Object.entries(LAN_SCORES)) {
+            // Check if controller name (or part of it) is in text
+            // The controller keys from Excel might be "Intel I226-V".
+            // The text might be "Intel I-226V" (extra hyphen).
+            // Simple approach: Check if key is substring of text (case insensitive)
+
+            // Normalize key for search: remove special chars to be safe?
+            // Actually, let's just check inclusion directly first.
+            if (normalizedText.includes(controller.toUpperCase())) {
+                totalSpeed += speed;
+                matched = true;
+            }
+        }
+
+        // If we found matches, return the sum
+        if (matched) {
+            return { text, score: totalSpeed, isNumeric: true };
+        }
+
+        // Fallback or if no known controller found (e.g. generic text) -> 0
+    }
+
+    // Custom Wireless parsing
+    // Hierarchy: Gen 7 > 6E > 6 > 5 > Slot > None
+    // Manufacturer: Intel > Qualcomm > Realtek > Mediatek > Generic
+    if (fieldName && fieldName.includes('Wireless')) {
+        let genScore = 0;
+
+        if (text.includes('Wi-Fi 7')) genScore = 7000;
+        else if (text.includes('Wi-Fi 6E')) genScore = 6000;
+        else if (text.includes('Wi-Fi 6')) genScore = 5000; // Matches "Wi-Fi 6" but not 6E because we checked 6E first
+        else if (text.includes('Wi-Fi 5')) genScore = 4000;
+
+        if (genScore === 0) {
+            if (text.includes('M.2')) return { text, score: 1000, isNumeric: true }; // Slot only
+            return { text, score: 0, isNumeric: true }; // None/Unknown
+        }
+
+        let mfgBonus = 100; // Default generic
+        const lower = text.toLowerCase();
+
+        // MFR Detection
+        if (lower.includes('intel') || lower.includes('killer') || lower.includes('ax2') || lower.includes('ax1') || lower.includes('be2')) {
+            mfgBonus = 500;
+        } else if (lower.includes('qualcomm') || lower.includes('qcn') || lower.includes('ncm')) {
+            mfgBonus = 400;
+        } else if (lower.includes('realtek') || lower.includes('rtl')) {
+            mfgBonus = 300;
+        } else if (lower.includes('mediatek') || lower.includes('mt') || lower.includes('rz') || lower.includes('amd')) {
+            mfgBonus = 200;
+        }
+
+        return { text, score: genScore + mfgBonus, isNumeric: true };
+    }
+
+    // Custom VRM (VCore) parsing
+    // Hierarchy: SPS (Tier 2) > DrMOS (Tier 1) > Discrete/Other (Tier 0)
+    // Score = (Tier * 1000) + Amperage
+    if (fieldName && fieldName.includes('VRM (VCore)')) {
+        let tier = 0;
+        let amps = 0;
+
+        // Determine Tier
+        if (text.includes('SPS')) {
+            tier = 2;
+        } else if (text.includes('DrMOS')) {
+            tier = 1;
+        }
+
+        // Determine Amperage
+        // Look for "XXA" or "XX A"
+        const ampMatch = text.match(/(\d+)\s*A/);
+        if (ampMatch) {
+            amps = parseInt(ampMatch[1]);
+        }
+
+        // Fallback: If no "A" found, but there's a number and it's SPS/DrMOS, maybe the number is amps?
+        // But usually it's explicit. If no amps found, amps = 0.
+
+        // 1H/1L Handling: Usually implies discrete. Tier 0.
+        // If text contains "1H" or "1L", it confirms Tier 0.
+
+        const score = (tier * 1000) + amps;
+        return { text, score: score, isNumeric: true };
+    }
+
     // Custom "Total M.2 (M)" parsing: "5(+2)" -> 5 Onboard + 2 AIC
     // Priority: Total Count > Onboard Count
     if (fieldName && fieldName.includes('Total M.2')) {
@@ -910,7 +1004,8 @@ function analyzeTable() {
             }
 
             // Try VRM parsing first for phase config fields
-            const isVRMField = fieldName.includes('phase') || fieldName.includes('vrm') || fieldName.includes('vcore');
+            // Explicitly exclude "vcore" to let parseValue handle component scoring
+            const isVRMField = (fieldName.includes('phase') || fieldName.includes('vrm')) && !fieldName.includes('vcore');
 
             const parsedValues = values.map(v => {
                 // Try VRM parser first if it's a VRM-related field
