@@ -21,7 +21,18 @@
 
 <div class="sticky-toolbar p-2 bg-light border-bottom">
     <div class="d-flex justify-content-between align-items-center">
-        <div class="fw-bold">Comparison Options</div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="fw-bold">Comparison Options</div>
+            <!-- Search Box -->
+            <div class="position-relative" style="width: 300px;">
+                <input type="text" id="moboSearch" class="form-control form-control-sm"
+                    placeholder="Add Motherboard...">
+                <div id="searchDropdown" class="dropdown-menu w-100 shadow"
+                    style="display: none; max-height: 300px; overflow-y: auto;">
+                    <!-- Results injected here -->
+                </div>
+            </div>
+        </div>
         <div class="d-flex gap-3">
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="hideSameToggle">
@@ -45,7 +56,11 @@
             <tr>
                 <th style="min-width: 250px; width: 250px;">Feature</th>
                 {% for m in mobos %}
-                <th style="min-width: 250px;" class="text-center">
+                <th style="min-width: 250px;" class="text-center group-header">
+                    <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 remove-mobo-btn"
+                        data-mobo-id="{{ m.id }}" title="Remove">
+                        <i class="bi bi-x"></i>
+                    </button>
                     <div>{{ m.brand }}</div>
                     <div class="fs-5">{{ m.model }}</div>
                     <span class="badge bg-secondary">{{ m.chipset }}</span>
@@ -520,10 +535,13 @@
             </tr>
             <tr>
                 <th class="ps-5">x16 Electrical</th>
-                {% for m in mobos %} <td class="text-center small">{{
-                    cell(m.dot.expansion.pcie_slots.physical_x16.electrical_lanes | replace(' ', '<br>') | safe ,
-                    m.dot.expansion.pcie_slots.physical_x16.electrical_lanes_comment) }}</td> {%
-                endfor %}
+                {% for m in mobos %} <td class="text-center small">
+                    <div class="d-inline-block text-start">
+                        {{ cell(m.dot.expansion.pcie_slots.physical_x16.electrical_lanes | replace(', ', '<br>') |
+                        replace(',', '<br>') | replace(' ', '<br>') | safe ,
+                        m.dot.expansion.pcie_slots.physical_x16.electrical_lanes_comment) }}
+                    </div>
+                </td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">x16 Total</th>
@@ -532,9 +550,12 @@
             </tr>
             <tr>
                 <th class="ps-5">x1/x4 Electrical</th>
-                {% for m in mobos %} <td class="text-center small">{{
-                    m.dot.expansion.pcie_slots.physical_x1x4.electrical_lanes | replace(' ', '<br>') | safe }}</td> {%
-                endfor %}
+                {% for m in mobos %} <td class="text-center small">
+                    <div class="d-inline-block text-start">
+                        {{ m.dot.expansion.pcie_slots.physical_x1x4.electrical_lanes | replace(', ', '<br>') |
+                        replace(',', '<br>') | replace(' ', '<br>') | safe }}
+                    </div>
+                </td> {% endfor %}
             </tr>
             <tr>
                 <th class="ps-5">x1/x4 Total</th>
@@ -544,7 +565,8 @@
             <tr>
                 <th class="ps-5">Total Slots</th>
                 {% for m in mobos %} <td class="text-center">{{ cell(m.dot.expansion.pcie_slots.total_slot_count,
-                    m.dot.expansion.pcie_slots.total_slot_count_comment) }}</td> {%
+                    m.dot.expansion.pcie_slots.total_slot_count_comment | replace(' -', '<br>-') | replace(' x',
+                    '<br>x') | safe) }}</td> {%
                 endfor %}
             </tr>
 
@@ -677,7 +699,7 @@
                 {% for m in mobos %}
                 <td class="text-center small text-muted">
                     {% if m.dot.notes and m.dot.notes.details %}
-                    {{ m.dot.notes.details }}
+                    {{ m.dot.notes.details | replace(' - ', '<br>- ') | safe }}
                     {% else %}
                     -
                     {% endif %}

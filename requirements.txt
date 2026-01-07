@@ -4,3 +4,5 @@ pandas
 SQLAlchemy
 pytest
 pytest-cov
+pytest-playwright
+requests

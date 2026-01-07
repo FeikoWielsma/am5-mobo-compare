@@ -238,6 +238,7 @@ def parse_multi_level_headers(worksheet, start_row, end_row):
             clean_parents.pop()
         
         # Handle empty leaf: promote last parent
+        
         if not leaf_val and not clean_parents:
             continue  # Empty column, skip
         if not leaf_val and clean_parents:

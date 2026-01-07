@@ -62,6 +62,18 @@ def unflatten_record(record):
         
         # Set leaf value
         last = parts[-1]
+        
+        # Conflict resolution: Do not overwrite an existing dictionary (branch) 
+        # with a scalar value (leaf), especially if the scalar is empty.
+        # This handles cases where a header row suggests a structure, but 
+        # adjacent empty columns promote the parent header as a leaf.
+        if last in current and isinstance(current[last], dict):
+            if not clean_val or clean_val == '-':
+                continue
+            # If there is a real value, we strictly shouldn't overwrite the dict.
+            # We could store it elsewhere, but for now, structure > value.
+            continue
+            
         current[last] = clean_val
     
     return nested

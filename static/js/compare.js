@@ -23,7 +23,9 @@ const FIELD_RULES = {
         'primary',
         'accent',
         'textaccent',
-        'superiocontroller'
+        'superiocontroller',
+        'lane-sharing',
+        'bifurcation'
     ],
 
     // Lower is better
@@ -48,28 +50,102 @@ const FIELD_RULES = {
     }
 };
 
+let allMobos = []; // Store fetched mobos for search
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Initial Bind
+    bindEvents();
+
+    // Fetch Mobo List for Search
+    fetch('/api/mobos')
+        .then(response => response.json())
+        .then(data => {
+            allMobos = data;
+        })
+        .catch(err => console.error('Failed to fetch mobos for search', err));
+
+    // Search Input Logic
+    const searchInput = document.getElementById('moboSearch');
+    const searchDropdown = document.getElementById('searchDropdown');
+
+    if (searchInput && searchDropdown) {
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            if (query.length < 2) {
+                searchDropdown.style.display = 'none';
+                return;
+            }
+
+            // Filter mobos (exclude ones already in URL if possible, but for now just show all matching)
+            const currentIds = new URLSearchParams(window.location.search).get('ids')?.split(',') || [];
+
+            const matches = allMobos.filter(m => {
+                const text = `${m.Brand} ${m.Model} ${m.Chipset}`.toLowerCase();
+                return text.includes(query) && !currentIds.includes(m.id.toString());
+            }).slice(0, 10); // Limit to 10
+
+            if (matches.length > 0) {
+                searchDropdown.innerHTML = '';
+                matches.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'dropdown-item p-2 border-bottom';
+                    item.innerHTML = `
+                        <div class="fw-bold">${m.Brand} ${m.Model}</div>
+                        <div class="small text-muted">${m.Chipset}</div>
+                    `;
+                    item.addEventListener('click', () => {
+                        addMobo(m.id);
+                        searchInput.value = ''; // Clear input
+                        searchDropdown.style.display = 'none';
+                    });
+                    searchDropdown.appendChild(item);
+                });
+                searchDropdown.style.display = 'block';
+            } else {
+                searchDropdown.style.display = 'none';
+            }
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+                searchDropdown.style.display = 'none';
+            }
+        });
+    }
+});
+
+/**
+ * Bind all event listeners to static and dynamic elements
+ */
+function bindEvents() {
     const hideSameToggle = document.getElementById('hideSameToggle');
     const highlightDiffToggle = document.getElementById('highlightDiffToggle');
     const table = document.getElementById('compareTable');
 
-    if (!hideSameToggle || !highlightDiffToggle || !table) return;
+    if (!table) return;
 
-    // Load collapsed state from localStorage
-    loadCollapsedState();
+    // Re-bind Toggle Listeners (remove old ones first to allow re-binding safely if we were not replacing the toolbar)
+    // Actually, toolbar is outside table container, so it persists? 
+    // Wait, the HTML structure shows toolbar is outside .table-container. 
+    // So we don't need to re-bind toolbar toggles if we only replace table.
 
-    // Analyze table on load
+    // HOWEVER, we do need to re-analyze table for highlights and hiding same rows
     analyzeTable();
-
-    // Initial Apply (without animations for page load)
     applySectionCollapse(false);
     applySubsectionCollapse(false);
 
-    // Add event listeners for toggles
+    // If toggles were checked, re-apply their effects
+    if (hideSameToggle && hideSameToggle.checked) updateVisibility();
+    if (highlightDiffToggle && highlightDiffToggle.checked) updateHighlights();
+
+    // Re-bind Toggle Events
     hideSameToggle.addEventListener('change', updateVisibility);
     highlightDiffToggle.addEventListener('change', updateHighlights);
 
-    // Add event listeners for section headers
+    // Section Headers (delegation or re-bind)
+    // Since we replace the table, we need to Re-bind these.
+    // Cleanest way is to just find them again.
     document.querySelectorAll('.section-header').forEach(header => {
         header.addEventListener('click', (e) => {
             if (!e.target.classList.contains('subsection-badge')) {
@@ -79,21 +155,104 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Add event listeners for subsection headers
+    // Subsection Headers
     document.querySelectorAll('.subsection-header').forEach(header => {
         header.addEventListener('click', () => {
             const subsection = header.getAttribute('data-subsection');
-            toggleSubsection(subsection); // Animate toggle
+            toggleSubsection(subsection);
         });
     });
 
-    // Initialize Bootstrap tooltips for comment indicators
+    // Remove Buttons
+    document.querySelectorAll('.remove-mobo-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = btn.getAttribute('data-mobo-id');
+            removeMobo(id);
+        });
+    });
+
+    // Tooltips
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].map(el => new bootstrap.Tooltip(el, {
         placement: 'top',
         trigger: 'hover focus'
     }));
+}
+
+/**
+ * Add a motherboard ID to the comparison
+ */
+function addMobo(id) {
+    const params = new URLSearchParams(window.location.search);
+    let ids = params.get('ids') ? params.get('ids').split(',') : [];
+
+    if (!ids.includes(id.toString())) {
+        ids.push(id);
+        updateComparison(ids);
+    }
+}
+
+/**
+ * Remove a motherboard ID from the comparison
+ */
+function removeMobo(id) {
+    const params = new URLSearchParams(window.location.search);
+    let ids = params.get('ids') ? params.get('ids').split(',') : [];
+
+    ids = ids.filter(x => x !== id.toString());
+    updateComparison(ids);
+}
+
+/**
+ * Update URL and Fetch new table
+ */
+function updateComparison(ids) {
+    const newUrl = `${window.location.pathname}?ids=${ids.join(',')}`;
+
+    // Push State
+    history.pushState({ ids: ids }, '', newUrl);
+
+    // Fetch
+    fetchTable(newUrl);
+}
+
+// Handle Browser Back/Forward
+window.addEventListener('popstate', (e) => {
+    fetchTable(window.location.href);
 });
+
+/**
+ * Fetch the compare page HTML and extract the table to replace
+ */
+function fetchTable(url) {
+    const tableContainer = document.querySelector('.table-container');
+    tableContainer.style.opacity = '0.5'; // Loading indicator
+
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newTable = doc.getElementById('compareTable');
+
+            if (newTable) {
+                const currentTable = document.getElementById('compareTable');
+                if (currentTable) {
+                    currentTable.replaceWith(newTable);
+                    bindEvents(); // Re-bind everything
+                }
+            }
+            tableContainer.style.opacity = '1';
+        })
+        .catch(err => {
+            console.error('Failed to update table', err);
+            tableContainer.style.opacity = '1';
+        });
+}
+
+/**
+ * Load collapsed state from localStorage
+ */
 
 /**
  * Load collapsed state from localStorage
@@ -479,10 +638,48 @@ function updateParentSectionBadges() {
 /**
  * Parse a value and extract numeric info for comparison
  */
-function parseValue(text) {
+function parseValue(text, fieldName) {
     if (!text || text === '-' || text === '') return null;
 
     const numbers = text.match(/\d+/g);
+
+    // Custom USB-C header parsing: "1*20g 1*10g" -> 30
+    if (/(\d+)\*\d+g/.test(text)) {
+        const matches = text.match(/(\d+)\*(\d+)g/g);
+        if (matches) {
+            const totalSpeed = matches.reduce((sum, part) => {
+                const parts = part.match(/(\d+)\*(\d+)g/);
+                return sum + (parseInt(parts[1]) * parseInt(parts[2]));
+            }, 0);
+            return { text, score: totalSpeed, isNumeric: true };
+        }
+    }
+
+    // Custom PCIe Slot parsing for "x16 Electrical"
+    // Format: "5x16, 3x2" (Gen 5 x16, Gen 3 x2)
+    // Logic: Hierarchical comparison. Slot 1 > Slot 2 > etc.
+    // Score = Sum( (Gen * 100 + Lanes) * 1000^(MaxSlots - i) )
+    if (fieldName && fieldName.toLowerCase().includes('x16 electrical')) {
+        const slots = text.match(/(\d+)x(\d+)/g);
+        if (slots) {
+            let totalScore = 0;
+            // Limit to first 4 slots to avoid overflow/complexity
+            const maxSlots = 4;
+
+            slots.slice(0, maxSlots).forEach((slot, index) => {
+                const parts = slot.match(/(\d+)x(\d+)/);
+                const gen = parseInt(parts[1]);
+                const lanes = parseInt(parts[2]);
+                const slotScore = (gen * 100) + lanes;
+
+                // Weight: 10^9, 10^6, 10^3, 10^0
+                const weight = Math.pow(1000, maxSlots - 1 - index);
+                totalScore += slotScore * weight;
+            });
+            return { text, score: totalScore, isNumeric: true };
+        }
+    }
+
     if (!numbers) return { text, score: 0, isNumeric: false };
 
     if (numbers.length === 1 && /^\d+$/.test(text.trim())) {
@@ -606,7 +803,8 @@ function analyzeTable() {
         }
 
         // Get field name from first cell to check if it should be ignored
-        const fieldName = firstCell.textContent.trim().toLowerCase();
+        const headerText = firstCell.textContent.trim();
+        const fieldName = headerText.toLowerCase();
         const shouldIgnore = FIELD_RULES.ignored_fields.some(ignored =>
             fieldName.includes(ignored)
         );
@@ -671,7 +869,7 @@ function analyzeTable() {
                 }
 
                 // Fall back to default parser
-                return parseValue(v.text);
+                return parseValue(v.text, headerText);
             });
             const hasNumeric = parsedValues.some(pv => pv && pv.isNumeric);
 
@@ -720,12 +918,17 @@ function analyzeTable() {
                     if (parsed.isNumeric) {
                         const score = parsed.score;
 
-                        // Only check if outlier when there's a clear majority
+                        // Only check if outlier when there's a clear majority AND the majority is either best or worst.
+                        // If majority is a "middle" value, we want to show its color relative to others.
                         if (useMajorityFiltering) {
-                            const isOutlier = score !== majorityScore;
-                            if (!isOutlier) {
-                                // Don't highlight majority values
-                                return;
+                            const majorityIsExtreme = (majorityScore === minScore || majorityScore === maxScore);
+
+                            if (majorityIsExtreme) {
+                                const isOutlier = score !== majorityScore;
+                                if (!isOutlier) {
+                                    // Don't highlight majority values
+                                    return;
+                                }
                             }
                         }
 
@@ -745,7 +948,16 @@ function analyzeTable() {
                             cell.setAttribute('data-font-weight', '500');
                         } else {
                             // Excel-style dynamic color gradient
-                            const position = (score - minScore) / (maxScore - minScore);
+
+                            // Use RANK-based interpolation instead of LINEAR interpolation
+                            // This ensures that "tiers" of values are visually distinct even if numeric gaps are tiny
+                            // (e.g. 5x16+5x8 vs 5x16+3x2) or huge.
+                            const uniqueScores = [...new Set(scores.filter(s => s !== -Infinity))].sort((a, b) => a - b);
+                            const rankIndex = uniqueScores.indexOf(score);
+                            const maxRank = uniqueScores.length - 1;
+
+                            // Avoid division by zero if only one unique value exists (though handled by maxScore===minScore above)
+                            const position = maxRank > 0 ? rankIndex / maxRank : 1;
 
                             // Interpolate colors: Red (0) -> Yellow (0.5) -> Green (1)
                             let r, g, b;
