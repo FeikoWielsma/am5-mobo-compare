@@ -18,7 +18,7 @@ def test_index_route(client):
     """Test the main index page loads."""
     rv = client.get('/')
     assert rv.status_code == 200
-    assert b"AM5 Mobo DB" in rv.data
+    assert b"AM5 DB" in rv.data
 
 def test_api_mobos(client):
     """Test the JSON API returns valid data."""

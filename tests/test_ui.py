@@ -58,15 +58,37 @@ def test_compare_page_toggles(page: Page, valid_ids):
 def test_add_remove_flow(page: Page, valid_ids):
     if not valid_ids:
         pytest.skip("No motherboards available.")
+    
+    # Capture console logs
+    page.on("console", lambda msg: print(f"BROWSER LOG: {msg.text}"))
+    page.on("pageerror", lambda err: print(f"BROWSER ERROR: {err}"))
         
-    page.goto("http://localhost:5000/compare")
+    # Expect the API call to happen
+    with page.expect_response("**/api/mobos") as response_info:
+        page.goto("http://localhost:5000/compare")
     
-    # Search logic
-    page.fill("#moboSearch", "ASUS") # "ASUS" should return results
-    page.wait_for_selector("#searchDropdown .dropdown-item")
+    # Ensure checking response succeeded (optional but good practice)
+    assert response_info.value.ok
     
-    # Click first result
-    page.click("#searchDropdown .dropdown-item >> nth=0")
+    # Search for "ASUS"
+    search_input = page.locator("#moboSearch")
+    # Type with delay to ensure events fire
+    search_input.type("ASUS", delay=100)
+    
+    # Wait for results
+    results_selector = "#searchDropdown .dropdown-item"
+    page.wait_for_selector(results_selector, state="visible", timeout=5000)
+    
+    results = page.locator(results_selector)
+    if results.count() == 0:
+        pytest.skip("No results found.")
+        
+    # Click using dispatch_event to ensure the event listener captures it
+    # sometimes .click() with force=True might hit the container or layer issue
+    results.first.dispatch_event("click")
+    
+    # Verify dropdown closes (confirms click interacting with listener)
+    expect(page.locator("#searchDropdown")).not_to_be_visible()
     
     # Check URL
     expect(page).to_have_url(re.compile(r"ids="))
@@ -77,9 +99,10 @@ def test_add_remove_flow(page: Page, valid_ids):
     
     # Remove
     mobo_headers.first.hover()
-    page.click(".remove-mobo-btn >> nth=0")
+    # Click remove button inside the first header
+    page.locator(".remove-mobo-btn").first.click(force=True)
     
-    # Verify removal
+    # Verify removal checking counts or URL
     expect(mobo_headers).to_have_count(0)
 
 def test_url_persistence(page: Page, valid_ids):

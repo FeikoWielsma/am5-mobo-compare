@@ -1,22 +1,24 @@
+import os
 import pytest
 from playwright.sync_api import Page, expect
 
 def test_m2_scoring_logic(page: Page):
     """
-    Load the compare page (or any page with the JS) and unit test the parseValue function
-    specifically for M.2 strings.
+    Unit test the parseValue function specifically for M.2 strings.
+    Loads parsers.js directly into the page context.
     """
-    # We need to load the page that has compare.js loaded.
-    # We can mock the network if needed, or just go to /compare which should load 
-    # even if empty (but might need valid IDs to not error? No, /compare works empty).
-    page.goto("http://localhost:5000/compare")
+    # 1. Load an empty page
+    page.goto("data:text/html,<html><body></body></html>")
 
-    # Inject a helper to expose parseValue or just run evaluation context
-    # parseValue is global in compare.js? It's defined at top level scope in the file, 
-    # but might not be attached to window. 
-    # Based on compare.js structure:
-    # `function parseValue(...)` is at top level. 
-    # It should be available in window scope if compare.js is included as script.
+    # 2. Inject parsers.js content
+    # Get path to parsers.js relative to this test file
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    js_path = os.path.join(project_root, 'static', 'js', 'parsers.js')
+    
+    page.add_script_tag(path=js_path)
+    
+    # 3. Inject dummy LAN_SCORES to prevent reference errors if any
+    page.evaluate('window.LAN_SCORES = {};')
     
     # Test Cases
     # Case 1: Slot Count Wins
@@ -58,7 +60,14 @@ def test_total_m2_scoring_logic(page: Page):
     """
     Test logic for "Total M.2 (M)" field with "X(+Y)" format.
     """
-    page.goto("http://localhost:5000/compare")
+    # 1. Load an empty page
+    page.goto("data:text/html,<html><body></body></html>")
+
+    # 2. Inject parsers.js content
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    js_path = os.path.join(project_root, 'static', 'js', 'parsers.js')
+    page.add_script_tag(path=js_path)
+    page.evaluate('window.LAN_SCORES = {};')
     
     # Case 1: Total Count Wins
     # 5(+2) = 7 total vs 5 = 5 total
@@ -94,7 +103,14 @@ def test_vrm_vcore_scoring_logic(page: Page):
     Hierarchy: SPS > DrMOS > Discrete.
     Score = Tier*1000 + Amps.
     """
-    page.goto("http://localhost:5000/compare")
+    # 1. Load an empty page
+    page.goto("data:text/html,<html><body></body></html>")
+
+    # 2. Inject parsers.js content
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    js_path = os.path.join(project_root, 'static', 'js', 'parsers.js')
+    page.add_script_tag(path=js_path)
+    page.evaluate('window.LAN_SCORES = {};')
     
     # Case 1: SPS vs DrMOS (Technology Wins)
     # 50A SPS vs 90A DrMOS (Realistically amps usually correlate, but testing logic)
@@ -141,7 +157,14 @@ def test_wireless_scoring_logic(page: Page):
     1. Gen: 7 (7000) > 6E (6000) > 6 (5000) > 5 (4000) > Slot (1000)
     2. Mfr: Intel (500) > Qualcomm (400) > Realtek (300) > Mediatek (200) > Generic (100)
     """
-    page.goto("http://localhost:5000/compare")
+    # 1. Load an empty page
+    page.goto("data:text/html,<html><body></body></html>")
+
+    # 2. Inject parsers.js content
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    js_path = os.path.join(project_root, 'static', 'js', 'parsers.js')
+    page.add_script_tag(path=js_path)
+    page.evaluate('window.LAN_SCORES = {};')
     
     # Case 1: Gen 7 vs Gen 6E
     # QCNCM865 (Wi-Fi 7) vs RZ608 (Wi-Fi 6E)
@@ -187,10 +210,16 @@ def test_wireless_scoring_logic(page: Page):
 
 def test_lan_scoring_logic(page: Page):
     """
-    Test logic for "LAN Controller" field.
+    Unit test logic for "LAN Controller" field.
     Logic: Sum of speeds of detected controllers.
     """
-    page.goto("http://localhost:5000/compare")
+    # 1. Load an empty page
+    page.goto("data:text/html,<html><body></body></html>")
+
+    # 2. Inject parsers.js content
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    js_path = os.path.join(project_root, 'static', 'js', 'parsers.js')
+    page.add_script_tag(path=js_path)
     
     # Inject Mock LAN_SCORES for consistent testing
     # Real app loads from Excel, but for JS unit test we mock the data

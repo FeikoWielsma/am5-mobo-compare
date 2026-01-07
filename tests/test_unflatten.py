@@ -205,5 +205,27 @@ class TestBuildHeaderTree:
         assert len(result[1]['children']) == 2  # Socket and Audio
 
 
+    def test_key_normalization(self):
+        """Test that specific keys are normalized (e.g. Lane-sharing -> Notes|Details)."""
+        columns = [
+            {
+                'key': 'PCI-E GEN 5.0|Lane-sharing, bifurcation, and other notes  (Looking for primary x16 bifurcation info? Refer to the "General" section of the FAQ on the About page.)', 
+                'name': 'Lane-sharing...', 
+                'path': ['PCI-E GEN 5.0']
+            }
+        ]
+        result = build_header_tree(columns)
+        
+        # Should be normalized to Notes -> Details
+        # But wait, logic replaces PATH and NAME
+        # path=['Notes'], name='Details'
+        
+        assert len(result) == 1
+        assert result[0]['name'] == 'Notes'
+        assert result[0]['children'][0]['name'] == 'Details'
+        # The key should be the normalized one
+        assert result[0]['children'][0]['key'] == 'Notes|Details'
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
