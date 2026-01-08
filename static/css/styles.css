@@ -21,13 +21,9 @@
 /* Sticky Toolbar: Always at the very top of the window */
 .sticky-toolbar {
     position: sticky;
-    top: -24px;
-    /* Offset for better vertical alignment if navbar is present, or 0 if not. */
-    /* Navbar is static flow, so we stick to top after scrolling past it? 
-       Actually user wants it sticky. 
-       If parent is body, top:0 works. */
     top: 0;
-    z-index: 1050;
+    z-index: 1090;
+    /* Higher than headers */
     background-color: white;
     border-bottom: 2px solid #dee2e6;
     padding: 0.75rem 0;
@@ -81,7 +77,8 @@ body {
 .category-header,
 .sub-category-header {
     position: sticky;
-    top: 60px;
+    top: 147px;
+    /* 48px toolbar + approx 99px sticky-header */
     z-index: 1010;
 }
 

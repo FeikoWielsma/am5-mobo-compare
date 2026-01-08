@@ -37,17 +37,17 @@
 
         <!-- Scorecard Rows -->
         <tr class="table-light">
-            <th class="ps-5">LAN</th>
+            <th class="ps-5">LAN Controller</th>
             {% for m in mobos %}
-            {% set sc = m.specs.get('_scorecard', {}) %}
-            <td class="text-center fw-bold text-primary">{{ sc.get('lan_text', '-') }}</td>
+            <td class="text-center">{{ cell(m.dot.general.networking.ethernet.lan,
+                m.dot.general.networking.ethernet.lan_comment, score=m.specs.get('_lan_score')) }}</td>
             {% endfor %}
         </tr>
         <tr class="table-light">
             <th class="ps-5">Wireless</th>
             {% for m in mobos %}
-            {% set sc = m.specs.get('_scorecard', {}) %}
-            <td class="text-center">{{ sc.get('wireless', '-') }}</td>
+            <td class="text-center">{{ cell(m.dot.general.networking.wireless,
+                m.dot.general.networking.wireless_comment) }}</td>
             {% endfor %}
         </tr>
         <tr class="table-light">
@@ -60,14 +60,11 @@
         <tr class="table-light">
             <th class="ps-5">VRM</th>
             {% for m in mobos %}
-            {% set sc = m.specs.get('_scorecard', {}) %}
             <td class="text-center">
-                <div class="fw-bold text-primary">{{ sc.get('vrm_text', '-') }}</div>
-                {% if sc.get('vcore_text') and sc.get('vcore_text') != '-' %}
-                <div class="small text-muted">{{ sc.get('vcore_text') }}</div>
-                {% endif %}
-                {% if sc.get('vrm_note') %}
-                <i class="bi bi-info-circle text-info ms-1" title="{{ sc.get('vrm_note') }}"></i>
+                {{ cell(m.dot.power.vrm_configuration.phase_config, m.dot.power.vrm_configuration.phase_config_comment)
+                }}
+                {% if m.dot.power.vrm_configuration.vrm_vcore and m.dot.power.vrm_configuration.vrm_vcore != '-' %}
+                <div class="small text-muted">{{ m.dot.power.vrm_configuration.vrm_vcore }}</div>
                 {% endif %}
             </td>
             {% endfor %}
@@ -76,7 +73,7 @@
             <th class="ps-5">Fan Headers</th>
             {% for m in mobos %}
             {% set sc = m.specs.get('_scorecard', {}) %}
-            <td class="text-center fw-bold">{{ sc.get('fan_count', 0) }}</td>
+            <td class="text-center">{{ sc.get('fan_count', 0) }}</td>
             {% endfor %}
         </tr>
         <tr class="table-light">
@@ -96,8 +93,8 @@
         <tr class="table-light">
             <th class="ps-5">USB-C Header</th>
             {% for m in mobos %}
-            {% set sc = m.specs.get('_scorecard', {}) %}
-            <td class="text-center h5">{{ warning_check(sc.get('usbc_header'), warning_if_false=True) }}</td>
+            <td class="text-center">{{ m.dot.internal_headers_features.usbthunderbolt.usbc_header | replace('*', 'x ') |
+                replace('g', 'G') if m.dot.internal_headers_features.usbthunderbolt.usbc_header else '-' }}</td>
             {% endfor %}
         </tr>
         <tr class="table-light">
@@ -105,27 +102,27 @@
             {% for m in mobos %}
             {% set sc = m.specs.get('_scorecard', {}) %}
             {% set usb = sc.get('usb_details', {}) %}
-            <td class="text-center small">
+            <td class="text-center">
                 <div class="fw-bold mb-1">{{ sc.get('usb_ports_total', '-') }} Total</div>
                 <div class="mb-1">
-                    <i class="bi bi-usb-symbol" title="Type-A"></i>
-                    {% if usb.type_a['2.0'] %}<span class="badge bg-secondary text-white mx-1" title="USB 2.0">{{
-                        usb.type_a['2.0'] }}x 2.0</span>{% endif %}
-                    {% if usb.type_a['3.2_5g'] %}<span class="badge bg-info text-dark mx-1" title="5Gbps">{{
-                        usb.type_a['3.2_5g'] }}x 5G</span>{% endif %}
-                    {% if usb.type_a['3.2_10g'] %}<span class="badge bg-primary text-white mx-1" title="10Gbps">{{
-                        usb.type_a['3.2_10g'] }}x 10G</span>{% endif %}
+                    <i class="bi bi-usb-symbol" title="Type-A">A:</i>
+                    {% if usb.type_a['2.0'] %}{{ usb.type_a['2.0'] }}x<span class="badge bg-secondary text-white mx-1"
+                        title="USB 2.0">2.0</span>{% endif %}
+                    {% if usb.type_a['3.2_5g'] %}{{ usb.type_a['3.2_5g'] }}x<span class="badge bg-info text-dark mx-1"
+                        title="5Gbps">5Gbps</span>{% endif %}
+                    {% if usb.type_a['3.2_10g'] %}{{ usb.type_a['3.2_10g'] }}x<span
+                        class="badge bg-primary text-white mx-1" title="10Gbps">10Gbps</span>{% endif %}
                 </div>
                 <div>
-                    <i class="bi bi-usb-c-fill" title="Type-C"></i>
-                    {% if usb.type_c['3.2_5g'] %}<span class="badge bg-info text-dark mx-1" title="5Gbps">{{
-                        usb.type_c['3.2_5g'] }}x 5G</span>{% endif %}
-                    {% if usb.type_c['3.2_10g'] %}<span class="badge bg-primary text-white mx-1" title="10Gbps">{{
-                        usb.type_c['3.2_10g'] }}x 10G</span>{% endif %}
-                    {% if usb.type_c['3.2_20g'] %}<span class="badge bg-success text-white mx-1" title="20Gbps">{{
-                        usb.type_c['3.2_20g'] }}x 20G</span>{% endif %}
-                    {% if usb.type_c['usb4_40g'] %}<span class="badge bg-warning text-dark mx-1" title="40Gbps/USB4">{{
-                        usb.type_c['usb4_40g'] }}x 40G</span>{% endif %}
+                    <i class="bi bi-usb-c-fill" title="Type-C">C:</i>
+                    {% if usb.type_c['3.2_5g'] %}{{ usb.type_c['3.2_5g'] }}x<span class="badge bg-info text-dark mx-1"
+                        title="5Gbps">5Gbps</span>{% endif %}
+                    {% if usb.type_c['3.2_10g'] %}{{ usb.type_c['3.2_10g'] }}x<span
+                        class="badge bg-primary text-white mx-1" title="10Gbps">10Gbps</span>{% endif %}
+                    {% if usb.type_c['3.2_20g'] %}{{ usb.type_c['3.2_20g'] }}x<span
+                        class="badge bg-success text-white mx-1" title="20Gbps">20Gbps</span>{% endif %}
+                    {% if usb.type_c['usb4_40g'] %}{{ usb.type_c['usb4_40g'] }}x<span
+                        class="badge bg-warning text-dark mx-1" title="40Gbps/USB4">USB4</span>{% endif %}
                 </div>
             </td>
             {% endfor %}

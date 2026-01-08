@@ -187,10 +187,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function renderTable() {
             const filtered = MOBO_DATA.filter(m => {
-                const g = globalSearch.value.toLowerCase();
-                if (g) {
+                const g = globalSearch.value.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                if (g.length > 0) {
                     const combined = `${m.brand} ${m.chipset} ${m.model}`.toLowerCase();
-                    if (!combined.includes(g)) return false;
+                    if (!g.every(word => combined.includes(word))) return false;
                 }
 
                 if (currentFilters.brand.size > 0 && !currentFilters.brand.has(String(m.brand))) return false;

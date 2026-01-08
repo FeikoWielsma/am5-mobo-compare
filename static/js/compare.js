@@ -39,8 +39,8 @@ function initSearch() {
 
     if (sInput && sDropdown) {
         sInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            if (query.length < 2) {
+            const queryWords = e.target.value.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+            if (queryWords.length === 0) {
                 sDropdown.style.display = 'none';
                 return;
             }
@@ -50,8 +50,8 @@ function initSearch() {
                 const brand = (m.Brand || m.brand || "").toLowerCase();
                 const model = (m.Model || m.model || "").toLowerCase();
                 const chipset = (m.Chipset || m.chipset || "").toLowerCase();
-                const text = `${brand} ${model} ${chipset}`;
-                return text.includes(query) && !currentIds.includes(String(m.id));
+                const combined = `${brand} ${model} ${chipset}`;
+                return queryWords.every(word => combined.includes(word)) && !currentIds.includes(String(m.id));
             }).slice(0, 10);
 
             if (matches.length > 0) {
