@@ -59,6 +59,91 @@ def calculate_lan_score(lan_text, lan_lookup):
     return total_speed
 
 
+    return scorecard
+
+
+def calculate_vrm_score(phase_text, amp_text):
+    """
+    Calculate VRM score based on Total VCORE Capacity (Phases * Amps).
+    Logic:
+      - Parse phase count (e.g. '2x12+2+1' -> 2*12=24).
+      - Parse amperage (e.g. '110A' -> 110).
+      - Score = Phases * Amps.
+      - Bonus for SPS (Smart Power Stage)?
+    """
+    if not phase_text or phase_text == '-':
+        return 0
+        
+    # 1. Parse Phase Count (Vcore part is usually first)
+    # Styles: "2x12+2+1", "16+2+1", "8+2+1", "Direct 20+2+1"
+    # We want the first number group, handling '2x' multiplier.
+    
+    # Clean text
+    p_text = str(phase_text).strip().lower()
+    
+    # Try finding 'NxM' pattern first
+    match_nx = re.search(r'(\d+)\s*x\s*(\d+)', p_text)
+    if match_nx:
+        phases = int(match_nx.group(1)) * int(match_nx.group(2))
+    else:
+        # Fallback to first number found
+        match_n = re.search(r'^(\d+)', p_text)
+        if match_n:
+            phases = int(match_n.group(1))
+        else:
+            phases = 0
+            
+    # 2. Parse Amperage
+    a_text = str(amp_text).strip().upper() if amp_text else ""
+    match_amp = re.search(r'(\d+)A', a_text)
+    amps = int(match_amp.group(1)) if match_amp else 0
+    
+    # If no amps specified, assume a low baseline (e.g. 40A) to at least rank by phase count
+    if phases > 0 and amps == 0:
+        amps = 40
+        
+    score = phases * amps
+    
+    # Small tie-breaker for SPS (better tech)
+    if 'SPS' in a_text:
+        score += 1
+        
+    return score
+
+def calculate_usb_header_score(val):
+    """
+    Calculate score for USB-C Header.
+    Logic: Count * Speed.
+    Speeds: 20G=200, 10G=100, 5G=50
+    """
+    if not val or val == '-':
+        return 0
+        
+    # Standard format from loader: "1*20g" or "2*5g"
+    # Also handle raw text if needed
+    text = str(val).lower()
+    
+    score = 0
+    
+    # Regex to find all header instances
+    # Matches "1*20g", "1x 20gbps", etc.
+    matches = re.findall(r'(\d+)\s*[\*x]\s*(\d+)g', text)
+    
+    for count, speed in matches:
+        c = int(count)
+        s = int(speed) # 20, 10, 5
+        
+        # Weighting
+        # 20G is much better than 10G
+        weight = s * 10
+        score += c * weight
+        
+    # Fallback if specific formatting fails but text exists (e.g. "Yes")
+    if score == 0 and val:
+        return 1
+        
+    return score
+
 def extract_scorecard(record):
     """
     Extracts key specifications for the summary scorecard.
@@ -75,10 +160,12 @@ def extract_scorecard(record):
         'audio': '-',
         'bios_flash_btn': False,
         'vrm_text': '-',
+        'vrm_score': 0,
         'fan_count': 0,
         'argb_count': 0,
         'rgb_count': 0,
         'usbc_header': False,
+        'usbc_header_score': 0,
         'vcore_text': '-',
         'vrm_note': '',
         'usb_ports_total': '-',
@@ -121,7 +208,7 @@ def extract_scorecard(record):
         if "audio" in k_lower and "codec" in k_lower and "comment" not in k_lower:
             scorecard['audio'] = str(v)
             
-        # BIOS Flash
+        # BIOS Flash (Button)
         if "bios flash" in k_lower and "comment" not in k_lower:
              scorecard['bios_flash_btn'] = True
                 
@@ -152,7 +239,7 @@ def extract_scorecard(record):
                 
         # USB-C Header
         if ("usb-c" in k_lower or "type-c" in k_lower) and "header" in k_lower:
-             scorecard['usbc_header'] = True
+             scorecard['usbc_header'] = str(v) # Store the actual text
              
         # USB Rear Details
         if "rear" in k_lower and "usb" in k_lower:
@@ -183,31 +270,22 @@ def extract_scorecard(record):
                          scorecard['pcie_x16_details'] = [f"<b>{d}</b>" for d in scorecard['pcie_x16_details']]
                 if "_html" in k_lower:
                     scorecard['pcie_x16_lanes_html'] = str(v)
-                    # Parse HTML segments for list display
-                    # Example: <b>5x16,</b>3x2 -> ["<b>1x Gen5 x16</b>", "1x Gen3 x2"] 
-                    # Actually, the string from excel_loader is like "<b>4x16,</b>4x4"
-                    # We can split by ',' and handle each part
                     parts = str(v).split(',')
                     details = []
                     is_in_bold = False
                     for p in parts:
                         p = p.strip()
                         if not p: continue
-                        
-                        # Fix tags for this segment
                         seg = p
                         if is_in_bold and not seg.startswith('<b>'):
                             seg = '<b>' + seg
-                        
                         if '<b>' in seg and '</b>' not in seg:
                             seg = seg + '</b>'
                             is_in_bold = True
                         elif '</b>' in seg and '<b>' not in seg:
-                            # Already handled by is_in_bold check above if it started without <b>
                             pass
                         elif '</b>' in seg:
                             is_in_bold = False
-                        
                         details.append(seg)
                     scorecard['pcie_x16_details'] = details
                 elif "_comment" not in k_lower and "_bold" not in k_lower:
@@ -235,8 +313,6 @@ def extract_scorecard(record):
                  if "_comment" in k_lower:
                      scorecard['m2_note'] = str(v)
                  else:
-                     # Parse: "2*5x4 1*4x4" or "2*5x4\n1*4x4"
-                     # regex: (\d+)\*(\d+)x(\d+) (allow whitespace and * or x separator)
                      matches = re.findall(r'(\d+)\s*[\*x]\s*(\d+)x(\d+)', str(v), re.IGNORECASE)
                      if matches:
                          parsed_m2 = []
@@ -244,6 +320,10 @@ def extract_scorecard(record):
                              count, gen, lanes = m
                              parsed_m2.append(f"{count}x Gen{gen}x{lanes}")
                          scorecard['m2_details'] = parsed_m2
+
+    # Calculate Derived Scores
+    scorecard['vrm_score'] = calculate_vrm_score(scorecard['vrm_text'], scorecard['vcore_text'])
+    scorecard['usbc_header_score'] = calculate_usb_header_score(scorecard.get('usbc_header', '-'))
 
     return scorecard
 

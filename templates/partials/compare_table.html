@@ -60,9 +60,13 @@
         <tr class="table-light">
             <th class="ps-5">VRM</th>
             {% for m in mobos %}
+            {% set sc = m.specs.get('_scorecard', {}) %}
             <td class="text-center">
-                {{ cell(m.dot.power.vrm_configuration.phase_config, m.dot.power.vrm_configuration.phase_config_comment)
-                }}
+                <span data-server-score="true" data-score="{{ sc.get('vrm_score', 0) }}">
+                    {{ cell(m.dot.power.vrm_configuration.phase_config,
+                    m.dot.power.vrm_configuration.phase_config_comment)
+                    }}
+                </span>
                 {% if m.dot.power.vrm_configuration.vrm_vcore and m.dot.power.vrm_configuration.vrm_vcore != '-' %}
                 <div class="small text-muted">{{ m.dot.power.vrm_configuration.vrm_vcore }}</div>
                 {% endif %}
@@ -93,8 +97,33 @@
         <tr class="table-light">
             <th class="ps-5">USB-C Header</th>
             {% for m in mobos %}
-            <td class="text-center">{{ m.dot.internal_headers_features.usbthunderbolt.usbc_header | replace('*', 'x ') |
-                replace('g', 'G') if m.dot.internal_headers_features.usbthunderbolt.usbc_header else '-' }}</td>
+            {% set sc = m.specs.get('_scorecard', {}) %}
+            <td class="text-center">
+                <span data-server-score="true" data-score="{{ sc.get('usbc_header_score', 0) }}">
+                    {% set val = m.dot.internal_headers_features.usbthunderbolt.usbc_header %}
+                    {% if val and '*' in val %}
+                    {% set parts = val.split('*') %}
+                    {% set speed = parts[1]|lower|replace('g','')|trim %}
+                    {% set sp_class = 'bg-secondary' %}
+                    {% set sp_title = 'USB' %}
+
+                    {% if '20' in speed %}
+                    {% set sp_class = 'bg-success' %}
+                    {% set sp_title = 'USB 3.2 Gen 2x2 (20Gbps)' %}
+                    {% elif '10' in speed %}
+                    {% set sp_class = 'bg-primary' %}
+                    {% set sp_title = 'USB 3.2 Gen 2 (10Gbps)' %}
+                    {% elif '5' in speed %}
+                    {% set sp_class = 'bg-info text-dark' %}
+                    {% set sp_title = 'USB 3.2 Gen 1 (5Gbps)' %}
+                    {% endif %}
+                    {{ parts[0] }}x <span class="badge {{ sp_class }}" title="{{ sp_title }}">{{ parts[1]|upper
+                        }}</span>
+                    {% else %}
+                    {{ val or '-' }}
+                    {% endif %}
+                </span>
+            </td>
             {% endfor %}
         </tr>
         <tr class="table-light">
@@ -103,26 +132,46 @@
             {% set sc = m.specs.get('_scorecard', {}) %}
             {% set usb = sc.get('usb_details', {}) %}
             <td class="text-center">
-                <div class="fw-bold mb-1">{{ sc.get('usb_ports_total', '-') }} Total</div>
-                <div class="mb-1">
-                    <i class="bi bi-usb-symbol" title="Type-A">A:</i>
-                    {% if usb.type_a['2.0'] %}{{ usb.type_a['2.0'] }}x<span class="badge bg-secondary text-white mx-1"
-                        title="USB 2.0">2.0</span>{% endif %}
-                    {% if usb.type_a['3.2_5g'] %}{{ usb.type_a['3.2_5g'] }}x<span class="badge bg-info text-dark mx-1"
-                        title="5Gbps">5Gbps</span>{% endif %}
-                    {% if usb.type_a['3.2_10g'] %}{{ usb.type_a['3.2_10g'] }}x<span
-                        class="badge bg-primary text-white mx-1" title="10Gbps">10Gbps</span>{% endif %}
+                <div class="fw-bold mb-2 border-bottom pb-1 mx-auto" style="width: fit-content;">
+                    {{ sc.get('usb_ports_total', '-') }} Total
+                    <span class="fw-normal text-muted ms-1" style="font-size: 0.9em;">
+                        ({{ m.dot.rear_io.usb.usba_total }}A + {{ m.dot.rear_io.usb.usbc_total }}C)
+                    </span>
                 </div>
-                <div>
-                    <i class="bi bi-usb-c-fill" title="Type-C">C:</i>
-                    {% if usb.type_c['3.2_5g'] %}{{ usb.type_c['3.2_5g'] }}x<span class="badge bg-info text-dark mx-1"
-                        title="5Gbps">5Gbps</span>{% endif %}
-                    {% if usb.type_c['3.2_10g'] %}{{ usb.type_c['3.2_10g'] }}x<span
-                        class="badge bg-primary text-white mx-1" title="10Gbps">10Gbps</span>{% endif %}
-                    {% if usb.type_c['3.2_20g'] %}{{ usb.type_c['3.2_20g'] }}x<span
-                        class="badge bg-success text-white mx-1" title="20Gbps">20Gbps</span>{% endif %}
-                    {% if usb.type_c['usb4_40g'] %}{{ usb.type_c['usb4_40g'] }}x<span
-                        class="badge bg-warning text-dark mx-1" title="40Gbps/USB4">USB4</span>{% endif %}
+
+                <div class="d-flex flex-column gap-1 align-items-center">
+                    {# Type A Row #}
+                    {% if usb.type_a['2.0'] or usb.type_a['3.2_5g'] or usb.type_a['3.2_10g'] %}
+                    <div class="d-flex align-items-center">
+                        <span class="me-2 text-muted fw-bold" style="width: 20px; text-align: right;">A:</span>
+                        <div class="d-flex gap-2">
+                            {% if usb.type_a['3.2_10g'] %}{{ usb.type_a['3.2_10g'] }}x <span class="badge bg-primary"
+                                title="USB 3.2 Gen 2 (10Gbps)">10G</span>{% endif %}
+                            {% if usb.type_a['3.2_5g'] %}{{ usb.type_a['3.2_5g'] }}x <span
+                                class="badge bg-info text-dark" title="USB 3.2 Gen 1 (5Gbps)">5G</span>{% endif %}
+                            {% if usb.type_a['2.0'] %}{{ usb.type_a['2.0'] }}x <span class="badge bg-secondary"
+                                title="USB 2.0 (480Mbps)">2.0</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# Type C Row #}
+                    {% if usb.type_c['3.2_5g'] or usb.type_c['3.2_10g'] or usb.type_c['3.2_20g'] or
+                    usb.type_c['usb4_40g'] %}
+                    <div class="d-flex align-items-center">
+                        <span class="me-2 text-muted fw-bold" style="width: 20px; text-align: right;">C:</span>
+                        <div class="d-flex gap-2">
+                            {% if usb.type_c['usb4_40g'] %}{{ usb.type_c['usb4_40g'] }}x <span
+                                class="badge bg-warning text-dark" title="USB4 (40Gbps)">40G</span>{% endif %}
+                            {% if usb.type_c['3.2_20g'] %}{{ usb.type_c['3.2_20g'] }}x <span class="badge bg-success"
+                                title="USB 3.2 Gen 2x2 (20Gbps)">20G</span>{% endif %}
+                            {% if usb.type_c['3.2_10g'] %}{{ usb.type_c['3.2_10g'] }}x <span class="badge bg-primary"
+                                title="USB 3.2 Gen 2 (10Gbps)">10G</span>{% endif %}
+                            {% if usb.type_c['3.2_5g'] %}{{ usb.type_c['3.2_5g'] }}x <span
+                                class="badge bg-info text-dark" title="USB 3.2 Gen 1 (5Gbps)">5G</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </td>
             {% endfor %}
@@ -153,7 +202,7 @@
                 <div class="fw-bold mb-1">
                     {{ sc.get('m2_total', '-') }} Total
                     {% if sc.get('m2_note') %}
-                    <i class="bi bi-info-circle text-info ms-1" style="font-size: 0.8em;"
+                    <i class="bi bi-info-circle-fill text-info ms-1" style="font-size: 0.8em;"
                         title="{{ sc.get('m2_note') }}"></i>
                     {% endif %}
                 </div>
