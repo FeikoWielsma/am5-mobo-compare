@@ -51,8 +51,12 @@ def normalize_lan_controller(raw_text, valid_controllers):
     # 'REALTEKRTL8111' in 'REALTEKRTL8111FKEP' -> YES.
     # So "Realtek RTL8111" matches. "Realtek RTL8111H" does NOT match because 'H' is not in 'FKEP'.
     
-    # So: Strip the suffix letter for 8111 if it's H, G, etc?
-    text = re.sub(r'RTL8111[A-Z]', 'RTL8111', text, flags=re.IGNORECASE)
+    # So: Strip the suffix letter for 8111 if it's H, G, EPV, etc.
+    # Was `RTL8111[A-Z]`, changed to `RTL8111[A-Z]+` or `*` to handle EPV
+    text = re.sub(r'RTL8111[A-Z]*', 'RTL8111', text, flags=re.IGNORECASE)
+    
+    # Generic map for RTL8125 variations (RTL8125D, RTL8125BG -> RTL8125 -> Match Realtek RTL8125)
+    text = re.sub(r'RTL8125[A-Z]*', 'RTL8125', text, flags=re.IGNORECASE)
     
     # 2. Split into chunks
     # Split by: comma, &, +, ' and ', newline
@@ -285,7 +289,12 @@ def extract_scorecard(record):
         'lan_text': '-',
         'wireless': '-',
         'audio': '-',
+        'lan_text': '-',
+        'wireless': '-',
+        'audio': '-',
         'bios_flash_btn': False,
+        'debug_text': '-',
+        'debug_score': 0,
         'vrm_text': '-',
         'vrm_score': 0,
         'fan_count': 0,
@@ -308,7 +317,8 @@ def extract_scorecard(record):
         'pcie_x16_comment': '',
         'm2_total': '-',
         'm2_details': [],
-        'm2_note': ''
+        'm2_note': '',
+        'lan_badges': []
     }
     
     def parse_count(val):
@@ -338,6 +348,27 @@ def extract_scorecard(record):
         # BIOS Flash (Button)
         if "bios flash" in k_lower and "comment" not in k_lower:
              scorecard['bios_flash_btn'] = True
+
+        # Debug features (Internal headers & features|Features|Debug features)
+        if "debug features" in k_lower:
+             val_str = str(v)
+             scorecard['debug_text'] = val_str
+             
+             # Ranking: Power LED < Debug LED(s) < POST code < LCD display
+             score = 0
+             v_lower = val_str.lower()
+             
+             if "lcd" in v_lower:
+                 score = 4
+             elif "post" in v_lower and "code" in v_lower:
+                 score = 3
+             elif "debug" in v_lower and "led" in v_lower:
+                 score = 2
+             elif "power" in v_lower and "led" in v_lower:
+                 score = 1
+                 
+             if score > scorecard['debug_score']:
+                 scorecard['debug_score'] = score
                 
         if "phase config" in k_lower:
             if "comment" in k_lower:
@@ -453,6 +484,40 @@ def extract_scorecard(record):
     scorecard['usbc_header_score'] = calculate_usb_header_score(scorecard.get('usbc_header', '-'))
 
     return scorecard
+
+def inject_scorecard_lan_badges(scorecard, canonical_ids, lan_lookup):
+    """
+    Injects pre-calculated LAN badges into the scorecard for consistent UI rendering.
+    """
+    if not canonical_ids or not lan_lookup:
+        return
+        
+    badges = []
+    for cid in canonical_ids:
+        speed = lan_lookup.get(cid, 0)
+        label = "1G"
+        color = "bg-secondary"
+        
+        if speed >= 10000:
+            label = "10G"
+            color = "bg-danger"
+        elif speed >= 5000:
+            label = "5G"
+            color = "bg-warning text-dark"
+        elif speed >= 2500:
+            label = "2.5G"
+            color = "bg-info text-dark"
+            
+        badges.append({
+            'name': cid,
+            'label': label,
+            'speed': speed,
+            'color': color
+        })
+        
+    # Sort descending by speed
+    badges.sort(key=lambda x: x['speed'], reverse=True)
+    scorecard['lan_badges'] = badges
 
 
 def unflatten_record(record):

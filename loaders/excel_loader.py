@@ -240,6 +240,11 @@ def load_data():
                 
                 # Extract Scorecard Data
                 scorecard = extract_scorecard(clean_record)
+                
+                # Inject LAN Badges (Consistency with Frontend)
+                from .data_transformer import inject_scorecard_lan_badges
+                inject_scorecard_lan_badges(scorecard, canonical_controllers, lan_lookup)
+                
                 nested_specs['_scorecard'] = scorecard
                 
                 # Create motherboard record

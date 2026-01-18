@@ -89,10 +89,33 @@
             {% endfor %}
         </tr>
         <tr class="table-light">
-            <th class="ps-5">BIOS Flash Button</th>
+            <th class="ps-5">Diag. & Flash</th>
             {% for m in mobos %}
             {% set sc = m.specs.get('_scorecard', {}) %}
-            <td class="text-center h5">{{ warning_check(sc.get('bios_flash_btn'), warning_if_false=True) }}</td>
+            {% set d_score = sc.get('debug_score', 0) %}
+            <td class="text-center h5">
+                <div class="d-flex justify-content-center gap-2">
+                    {# BIOS Flash #}
+                    {% if sc.get('bios_flash_btn') %}
+                    <i class="bi bi-lightning-charge-fill text-warning" title="BIOS Flash Button"></i>
+                    {% endif %}
+
+                    {# Debug Features #}
+                    {% if d_score >= 4 %}
+                    <i class="bi bi-display text-info" title="LCD Display"></i>
+                    {% elif d_score == 3 %}
+                    <i class="bi bi-card-text text-primary" title="POST Code"></i>
+                    {% elif d_score == 2 %}
+                    <i class="bi bi-lightbulb-fill text-danger" title="Debug LED(s)"></i>
+                    {% elif d_score == 1 %}
+                    <i class="bi bi-power text-secondary" title="Power LED"></i>
+                    {% endif %}
+
+                    {% if not sc.get('bios_flash_btn') and d_score == 0 %}
+                    <span class="text-muted small">-</span>
+                    {% endif %}
+                </div>
+            </td>
             {% endfor %}
         </tr>
         <tr class="table-light">

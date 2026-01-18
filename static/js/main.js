@@ -823,11 +823,56 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             // Connectivity
-            setVal('modal-lan', sc.lan_text);
+            // Connectivity
+            // LAN: Show badges if available, else text
+            const lanEl = document.getElementById('modal-lan');
+            if (lanEl) {
+                if (sc.lan_badges && sc.lan_badges.length > 0) {
+                    lanEl.innerHTML = `
+                        <div class="d-flex flex-wrap gap-1 align-items-center">
+                            <span class="small me-1">${sc.lan_text || ''}</span>
+                            ${sc.lan_badges.map(b =>
+                        `<span class="badge ${b.color}" title="${b.name}">${b.label}</span>`
+                    ).join('')}
+                        </div>
+                    `;
+                } else {
+                    lanEl.innerText = sc.lan_text || '-';
+                }
+            }
+
             setVal('modal-wifi', sc.wireless);
             setVal('modal-audio', sc.audio);
             setHtml('modal-usbc', getBoolIcon(sc.usbc_header));
-            setHtml('modal-bios', getBoolIcon(sc.bios_flash_btn));
+            setHtml('modal-usbc', getBoolIcon(sc.usbc_header));
+
+            // Diagnostics & Flash
+            const diagEl = document.getElementById('modal-bios'); // Reusing the element ID, label changed in HTML
+            if (diagEl) {
+                let diagHtml = '';
+
+                // BIOS Flash Button
+                if (sc.bios_flash_btn) {
+                    diagHtml += '<i class="bi bi-lightning-charge-fill text-warning me-2" title="BIOS Flash Button"></i>';
+                }
+
+                // Debug Features
+                // Score: 1=Power LED, 2=Debug LED, 3=POST Code, 4=LCD
+                const dScore = sc.debug_score || 0;
+
+                if (dScore >= 4) {
+                    diagHtml += '<i class="bi bi-display text-info me-2" title="LCD Display"></i>';
+                } else if (dScore === 3) {
+                    diagHtml += '<i class="bi bi-card-text text-primary me-2" title="POST Code"></i>';
+                } else if (dScore === 2) {
+                    diagHtml += '<i class="bi bi-lightbulb-fill text-danger me-2" title="Debug LED(s)"></i>';
+                } else if (dScore === 1) {
+                    diagHtml += '<i class="bi bi-power text-secondary me-2" title="Power LED"></i>';
+                }
+
+                if (!diagHtml) diagHtml = '<span class="text-muted">-</span>';
+                diagEl.innerHTML = diagHtml;
+            }
 
             // Power & Cooling
             setVal('modal-vrm', sc.vrm_text);
