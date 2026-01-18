@@ -62,3 +62,83 @@ class MoboService:
             'Chipset': m.chipset,
             'FormFactor': m.form_factor
         }
+
+    def inject_lan_speed_structure(self, structure):
+        """
+        Injects 'LAN Speed' into the structure tree under Networking > Ethernet.
+        This allows the frontend to show it in the dropdown.
+        """
+        if not structure:
+            return structure
+            
+        # Traverse to find Networking -> Ethernet
+        # Structure is list of dicts: [{'name': 'General', 'children': [...]}, ...]
+        
+        # Helper to find node by name
+        def find_node(nodes, name):
+            for node in nodes:
+                if node.get('name') == name:
+                    return node
+            return None
+
+        networking = None
+        general = find_node(structure, 'General')
+        if general:
+             networking = find_node(general.get('children', []), 'Networking')
+        
+        # Fallback: try root just in case structure changes
+        if not networking:
+             networking = find_node(structure, 'Networking')
+
+        if networking:
+            ethernet = find_node(networking.get('children', []), 'Ethernet')
+            if ethernet:
+                # Check if already exists to avoid dupes if called multiple times (though mostly per request)
+                children = ethernet.get('children', [])
+                if not find_node(children, 'LAN Speed'):
+                    # Insert 'LAN Speed' virtual node
+                    # It needs a 'key' that matches what we inject in data (e.g. 'LanSpeed')
+                    children.append({
+                        'name': 'LAN Speed',
+                        'key': 'LanSpeed',
+                        'children': []
+                    })
+        return structure
+
+    def inject_lan_speed_data(self, mobo_dicts):
+        """
+        Injects 'LanSpeed' key into each motherboard dict.
+        Calculates max speed from _lan_ids.
+        """
+        lan_lookup = self.get_lan_lookup()
+        
+        for m in mobo_dicts:
+            # Check specs for _lan_ids
+            # mobo_dicts comes from m.to_dict(), so structure is flat-ish but specs keys are at root if unflattened?
+            # m.to_dict() merges specs into root. So checks 'specs' key?
+            # Wait, m.to_dict() implementation: data = {**self.specs} ...
+            # So _lan_ids should be at root if it was in specs.
+            
+            lan_ids = m.get('_lan_ids', [])
+            max_speed = 0
+            
+            if lan_ids:
+                for lid in lan_ids:
+                    speed = lan_lookup.get(lid, 0)
+                    if speed > max_speed:
+                        max_speed = speed
+            
+            # Convert to label
+            speed_label = "-"
+            if max_speed >= 10000:
+                speed_label = "10G"
+            elif max_speed >= 5000:
+                speed_label = "5G"
+            elif max_speed >= 2500:
+                speed_label = "2.5G"
+            elif max_speed >= 1000:
+                speed_label = "1G"
+                
+            m['LanSpeed'] = speed_label
+            
+        return mobo_dicts

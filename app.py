@@ -28,7 +28,13 @@ def index():
     service = get_service()
     # Build dict for template from Motherboard attributes
     mobos = [m.to_dict() for m in service.get_all_mobos()]
+    
+    # Inject Virtual Columns (LAN Speed)
+    service.inject_lan_speed_data(mobos)
+    
     structure = service.get_structure()
+    service.inject_lan_speed_structure(structure)
+    
     return render_template('index.html', mobos=mobos, structure=structure)
 
 

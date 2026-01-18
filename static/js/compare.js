@@ -880,7 +880,7 @@ function analyzeTable() {
  * Format LAN Controller cell to show badges and split lines per controller
  */
 function formatLANDisplay(cell, text) {
-    // 1. Try Server-Side IDs first (Canonical)
+    // 1. Try Server-Side IDs first (Canonical) for BADGES
     const lanIdsRaw = cell.getAttribute('data-lan-ids');
     let foundControllers = [];
 
@@ -901,29 +901,13 @@ function formatLANDisplay(cell, text) {
         }
     }
 
-    // 2. Fallback to client-side parsing ONLY if server data missing (shouldn't happen with new loader)
-    if (foundControllers.length === 0 && text) {
-        // Legacy fallback if needed (or just return to show text)
-        // For now, let's assume if text exists but no IDs, we show text.
-        return;
+    // Sort by speed desc for badge order
+    if (foundControllers.length > 0) {
+        foundControllers.sort((a, b) => b.speed - a.speed);
     }
 
-    // If no controllers found, do nothing
-    if (foundControllers.length === 0) return;
-
-    // Sort by speed desc
-    foundControllers.sort((a, b) => b.speed - a.speed);
-
-    // Build HTML
-    let html = '';
-
-    // Helper to determine badge color
-    const getBadge = (speed) => {
-        if (speed >= 10000) return `<span class="badge bg-danger">10G</span>`;
-        if (speed >= 5000) return `<span class="badge bg-warning text-dark">5G</span>`;
-        if (speed >= 2500) return `<span class="badge bg-info text-dark">2.5G</span>`;
-        return `<span class="badge bg-secondary">1G</span>`;
-    };
+    // Build Badges HTML
+    let badgesHtml = '';
 
     // Helper for specific text label if needed
     const getLabel = (speed) => {
@@ -944,14 +928,23 @@ function formatLANDisplay(cell, text) {
         let displayLabel = speedLabel;
         if (c.speed > 10000 && c.speed !== 20000 && c.speed !== 10000) displayLabel = 'Fast'; // Guard for weird speeds
 
-        // Badge on right
-        html += `<div class="mb-1 d-flex align-items-center justify-content-center gap-2">
-                    <span class="small">${c.name}</span>
-                    <span class="badge ${badgeClass}">${displayLabel}</span>
-                 </div>`;
+        // Add badge with tooltip showing canonical name
+        badgesHtml += `<span class="badge ${badgeClass}" title="${c.name}">${displayLabel}</span>`;
     });
 
-    cell.innerHTML = html;
+    // Final HTML: Original Text + Canonical Badges (Inline)
+    // Using flex-wrap to handle long text gracefully
+    let finalHtml = `
+        <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
+            <span class="small">${text}</span>
+            ${badgesHtml}
+        </div>
+    `;
+
+    // If no controllers found, just return (keeps original text)
+    if (foundControllers.length === 0) return;
+
+    cell.innerHTML = finalHtml;
 }
 
 /**
