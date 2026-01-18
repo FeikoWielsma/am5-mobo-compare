@@ -39,7 +39,8 @@
         <tr class="table-light">
             <th class="ps-5">LAN Controller</th>
             {% for m in mobos %}
-            <td class="text-center">{{ cell(m.dot.general.networking.ethernet.lan,
+            <td class="text-center" data-lan-ids='{{ m.specs.get("_lan_ids", []) | tojson | safe }}'>{{
+                cell(m.dot.general.networking.ethernet.lan,
                 m.dot.general.networking.ethernet.lan_comment, score=m.specs.get('_lan_score')) }}</td>
             {% endfor %}
         </tr>
@@ -268,7 +269,9 @@
         </tr>
         <tr>
             <th class="ps-5">LAN Controller</th>
-            {% for m in mobos %} <td class="text-center small">{{ cell(m.dot.general.networking.ethernet.lan,
+            {% for m in mobos %} <td class="text-center small"
+                data-lan-ids='{{ m.specs.get("_lan_ids", []) | tojson | safe }}'>{{
+                cell(m.dot.general.networking.ethernet.lan,
                 m.dot.general.networking.ethernet.lan_comment, score=m.specs.get('_lan_score')) }}</td> {%
             endfor %}
         </tr>

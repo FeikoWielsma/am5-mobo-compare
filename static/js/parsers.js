@@ -78,47 +78,9 @@ function getCustomRank(fieldName, value) {
     return null;
 }
 
-/**
- * Normalize LAN text to handle abbreviations and variations
- * e.g. "Rltk" -> "Realtek", "AQC113CS" -> "AQC113C"
- */
-function normalizeLANText(text) {
-    let norm = text;
-    // Common abbreviations
-    norm = norm.replace(/Rltk/ig, 'Realtek');
-    norm = norm.replace(/AQC113CS/ig, 'AQC113C'); // Handle specific model variation
-    // Remove all non-alphanumeric for robust matching
-    return norm.toUpperCase().replace(/[^A-Z0-9]/g, '');
-}
-
-/**
- * Extract distinct LAN controllers from text, handling sub-string overlaps.
- * Returns array of { name: str, speed: int }
- */
-function getLanControllers(text) {
-    if (!text || typeof LAN_SCORES === 'undefined') return [];
-
-    const cleanText = normalizeLANText(text);
-    let matches = [];
-
-    // 1. Find all potential matches
-    for (const [controller, speed] of Object.entries(LAN_SCORES)) {
-        const cleanController = controller.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        if (cleanText.includes(cleanController)) {
-            matches.push({ name: controller, speed: speed, clean: cleanController });
-        }
-    }
-
-    // 2. Filter out substrings (e.g. if "RTL8111H" is found, ignore "RTL8111")
-    const distinctMatches = matches.filter(m => {
-        const isSubstring = matches.some(other =>
-            other !== m && other.clean.includes(m.clean)
-        );
-        return !isSubstring;
-    });
-
-    return distinctMatches;
-}
+// LAN Controller parsing is now handled server-side (data_transformer.py)
+// and passed via data-lan-ids attribute.
+// Legacy functions removed.
 
 /**
  * Parse VRM configuration strings like "2x10+2+2" into total phase count
@@ -170,13 +132,18 @@ function parseValue(text, fieldName) {
     if (!text || text === '-' || text === '') return null;
 
     // Custom LAN Controller parsing
-    // Uses global LAN_SCORES injected from backend
-    if (fieldName && fieldName.includes('LAN Controller') && typeof LAN_SCORES !== 'undefined') {
-        const controllers = getLanControllers(text);
-        if (controllers.length > 0) {
-            const totalSpeed = controllers.reduce((sum, c) => sum + c.speed, 0);
-            return { text, score: totalSpeed, isNumeric: true };
-        }
+    // Now primarily handled by server-side scoring (data-server-score),
+    // but leaving this for fallback or sort logic if needed.
+    // Actually, analyzeTable uses data-server-score first, so this might not be reached for sorting
+    // if the HTML attribute is present.
+    // But compare.js L703 checks data-server-score BEFORE calling parseValue.
+    // So we can probably simplify this or just return null to let the server score take precedence.
+    if (fieldName && fieldName.includes('LAN Controller')) {
+        // If we are here, it means analyzeTable didn't find a data-server-score attribute
+        // or we are parsing raw text for some other reason.
+        // Since we removed getLanControllers, we can't parse it here easily.
+        // Return null/0 to default to string comparison or 0.
+        return { text, score: 0, isNumeric: false };
     }
 
     // Custom Wireless parsing

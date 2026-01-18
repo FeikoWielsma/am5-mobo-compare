@@ -10,52 +10,179 @@ Functions:
     clean_record_values: Sanitize all values in a record
 """
 
-
 import re
+
+def normalize_lan_controller(raw_text, valid_controllers):
+    """
+    Parse raw LAN text into a list of canonical controller names.
+    
+    Args:
+        raw_text (str): Raw text from Excel (e.g. "Realtek RTL8125BG + Intel I225-V")
+        valid_controllers (list): List of known canonical controller names from DB/Lookup
+        
+    Returns:
+        list: List of canonical names found (e.g. ['Realtek RTL8125BG', 'Intel I225-V'])
+    """
+    if not raw_text:
+        return []
+        
+    # 1. Pre-cleaning & Expansion
+    text = str(raw_text)
+    
+    # Common Typos / Abbreviations
+    text = re.sub(r'\bRtlk\b', 'Realtek', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bRltk\b', 'Realtek', text, flags=re.IGNORECASE)
+    text = re.sub(r'E3100G', 'E3100(G)', text, flags=re.IGNORECASE) # Fix Killer E3100G -> E3100(G) match
+    
+    # handle "Realtek RTL 8125" -> "Realtek RTL8125" (remove space between RTL and number)
+    text = re.sub(r'RTL\s+(\d+)', r'RTL\1', text, flags=re.IGNORECASE)
+
+    # Specific mapping for RTL8111 variations to the canonical name in DB which might be "Realtek RTL8111(F/K/EP)"
+    # If we see RTL8111H, RTL8111G, etc, we normalize it to "RTL8111" for matching purposes if the specific key doesnt exist
+    # But wait, we match against valid_controllers. 
+    # Let's forcefully map RTL8111X to a known pattern or handle in matching loop.
+    # Actually, let's just clean it here.
+    # If the DB has "Realtek RTL8111(F/K/EP)", we want to match that.
+    # So if text contains RTL8111, let's keep it but maybe we need a custom matcher below.
+    # Let's just rely on the fuzzy matcher but improve it? 
+    # No, simpler: Map RTL8111.* to a standard token if needed, but let's see.
+    # If I change RTL8111H to just RTL8111, does it match?
+    # "Realtek RTL8111" vs "Realtek RTL8111(F/K/EP)".
+    # 'REALTEKRTL8111' in 'REALTEKRTL8111FKEP' -> YES.
+    # So "Realtek RTL8111" matches. "Realtek RTL8111H" does NOT match because 'H' is not in 'FKEP'.
+    
+    # So: Strip the suffix letter for 8111 if it's H, G, etc?
+    text = re.sub(r'RTL8111[A-Z]', 'RTL8111', text, flags=re.IGNORECASE)
+    
+    # 2. Split into chunks
+    # Split by: comma, &, +, ' and ', newline
+    chunks = re.split(r'[,&+/\n]|\s+and\s+', text)
+    
+    found_controllers = []
+    
+    for chunk in chunks:
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+            
+        # Handle multipliers like "(2x)" or "x2"
+        count = 1
+        multi_match = re.search(r'\(?(\d+)x\)?|\b(\d+)x\b|x(\d+)', chunk, re.IGNORECASE)
+        if multi_match:
+            # Extract number
+            nums = [n for n in multi_match.groups() if n]
+            if nums:
+                count = int(nums[0])
+            # Remove the multiplier text to clean up for matching
+            chunk = re.sub(r'\(?(\d+)x\)?|\b(\d+)x\b|x(\d+)', '', chunk, flags=re.IGNORECASE)
+            
+        # Clean chunk further for matching
+        clean_chunk = re.sub(r'[^A-Z0-9]', '', chunk.upper())
+        
+        # 3. Find best match in valid_controllers
+        best_match = None
+        best_match_len = 0
+        
+        # We need to find which canonical controller is referenced in this chunk.
+        # e.g. chunk="Realtek RTL8125" -> match="Realtek RTL8125BG" (fuzzy) or exact?
+        # The user wants "RTL8125" -> "Realtek RTL8125" (2.5G).
+        # But if valid_controllers has "Realtek RTL8125BG" and "Realtek RTL8125", preserving specific model is good.
+        # But user said "RTL8111... should be 1G cards".
+        
+        candidates = []
+        for vc in valid_controllers:
+            vc_clean = re.sub(r'[^A-Z0-9]', '', vc.upper())
+            
+            # Check if canonical name is in chunk OR chunk is in canonical name
+            # We favor strict containment.
+            
+            # Case A: Chunk contains canonical key (e.g. chunk="Realtek RTL8125BG", vc="RTL8125")
+            # Case B: Canonical key contains chunk (e.g. chunk="RTL8125", vc="Realtek RTL8125")
+            
+            if vc_clean in clean_chunk:
+                candidates.append(vc)
+            elif clean_chunk in vc_clean and len(clean_chunk) > 4: # Avoid matching short noise
+                 # Only if the chunk is specific enough. "Realtek" matches everything, bad.
+                 # "RTL8125" matches "Realtek RTL8125BG".
+                 if "REALTEK" in clean_chunk and len(clean_chunk) < 8:
+                     pass # Skip just "Realtek"
+                 else:
+                     candidates.append(vc)
+                 
+        # Selection logic:
+        # 1. Prefer longer matches (more specific).
+        # 2. Prefer matches that start with "Realtek", "Intel", etc if chunk has it?
+        
+        if candidates:
+            # Sort by length descending to get most specific match (RTL8125BG > RTL8125)
+            # BUT wait, the user said "RTL8125's should be identified as 2.5G". 
+            # If we match "Realtek RTL8125BG", speed is 2500. Correct.
+            # If we match "Realtek RTL8125", speed is 2500. Correct.
+            
+            # Identify "Generic" vs "Specific".
+            # For 8111, any variant is 1G.
+            
+            # Let's pick the longest candidate that is contained in the chunk (Case A)
+            # If none, pick the shortest candidate that contains the chunk (Case B - expansion)?
+            # meaningful expansion: "RTL8125" -> "Realtek RTL8125"
+            
+            # Refined approach:
+            # Filter candidates to those compatible with the chunk.
+            
+            # Priority:
+            # 1. Exact match (clean)
+            # 2. Chunk contains Vendor + Model (RTL8125)
+            
+            # Let's use the `clean_chunk` to score.
+            
+            matches_with_score = []
+            for cand in candidates:
+                cand_clean = re.sub(r'[^A-Z0-9]', '', cand.upper())
+                score = 0
+                if cand_clean == clean_chunk:
+                    score = 100
+                elif cand_clean in clean_chunk:
+                    score = 50 + len(cand_clean) # Prefer longer sub-matches
+                elif clean_chunk in cand_clean:
+                    # Expansion case. Danger of over-matching "Realtek" to "Realtek RTL8125"
+                    # Require digit match?
+                    if any(c.isdigit() for c in clean_chunk):
+                         score = 20 + len(cand_clean) # Prefer picking the canonical name
+                    else:
+                         score = 0 # Ignore pure alpha matches like "Realtek" expanding to specific
+                
+                matches_with_score.append((cand, score))
+            
+            matches_with_score.sort(key=lambda x: x[1], reverse=True)
+            
+            if matches_with_score and matches_with_score[0][1] > 0:
+                best = matches_with_score[0][0]
+                
+                # Special override: If it's an 8111, map to generic if specific not found or just to unify?
+                # User said "All RTL81111 ... identified as 1G". As long as lookup has speed, it's fine.
+                
+                for _ in range(count):
+                    found_controllers.append(best)
+
+    return found_controllers
 
 def calculate_lan_score(lan_text, lan_lookup):
     """
     Calculate total LAN speed score based on lookup table.
+    Uses normalize_lan_controller to identify chips first.
     """
     if not lan_text or not lan_lookup:
         return 0
+    
+    # Use the new normalizer
+    # valid_controllers are the keys of lan_lookup
+    controllers = normalize_lan_controller(lan_text, list(lan_lookup.keys()))
+    
+    total_speed = 0
+    for c in controllers:
+        speed = lan_lookup.get(c, 0)
+        total_speed += speed
         
-    # 1. Normalize text (replace abbreviations before stripping)
-    norm = str(lan_text)
-    norm = re.sub(r'Rltk', 'Realtek', norm, flags=re.IGNORECASE)
-    norm = re.sub(r'AQC113CS', 'AQC113C', norm, flags=re.IGNORECASE)
-    
-    # 2. Strip non-alphanumeric and uppercase
-    clean_text = re.sub(r'[^A-Z0-9]', '', norm.upper())
-    
-    matches = []
-    
-    # 3. Find all potential matches
-    for name, speed in lan_lookup.items():
-        clean_name = re.sub(r'[^A-Z0-9]', '', name.upper())
-        if clean_name in clean_text:
-            matches.append({
-                'name': name,
-                'clean': clean_name,
-                'speed': speed
-            })
-            
-    # 4. Filter out substrings (e.g. ignore "RTL8111" if "RTL8111H" is present)
-    distinct_matches = []
-    for m in matches:
-        is_substring = False
-        for other in matches:
-            if other is m:
-                continue
-            if m['clean'] in other['clean']:
-                is_substring = True
-                break
-        
-        if not is_substring:
-            distinct_matches.append(m)
-            
-    # 5. Sum speeds
-    total_speed = sum(m['speed'] for m in distinct_matches)
     return total_speed
 
 

@@ -225,10 +225,18 @@ def load_data():
                 
                 # Load lookup (cached)
                 lan_lookup = load_lan_lookup()
-                lan_score = calculate_lan_score(lan_text, lan_lookup)
+                
+                # NORMALIZE and Store Canonical IDs
+                # calculate_lan_score now internally calls normalize, but we want to store the IDs too.
+                from .data_transformer import normalize_lan_controller
+                canonical_controllers = normalize_lan_controller(lan_text, list(lan_lookup.keys()))
+                
+                # Score is sum of speeds of these controllers
+                lan_score = sum(lan_lookup.get(c, 0) for c in canonical_controllers)
                 
                 # Inject into nested specs
                 nested_specs['_lan_score'] = lan_score
+                nested_specs['_lan_ids'] = canonical_controllers # Store logical IDs for DB/UI
                 
                 # Extract Scorecard Data
                 scorecard = extract_scorecard(clean_record)
@@ -309,10 +317,10 @@ def load_lan_lookup():
                 base_speed = 25000
             elif "10G" in speed_str:
                 base_speed = 10000
-            elif "5G" in speed_str:
-                base_speed = 5000
             elif "2.5G" in speed_str:
                 base_speed = 2500
+            elif "5G" in speed_str:
+                base_speed = 5000
             elif "1G" in speed_str:
                 base_speed = 1000
             
@@ -320,26 +328,6 @@ def load_lan_lookup():
             
             if total_speed > 0:
                 lookup[name] = total_speed
-                
-        # Inject defaults for common missing controllers (Safety Net)
-        defaults = {
-            "Realtek RTL8111H": 1000,
-            "Realtek RTL8111": 1000, 
-            "Realtek RTL8125": 2500,
-            "Realtek RTL8125B": 2500,
-            "Realtek RTL8125BG": 2500,
-            "Realtek RTL8126": 5000,
-            "Intel I219-V": 1000,
-            "Intel I219-LM": 1000,
-            "Intel I225-V": 2500,
-            "Intel I226-V": 2500,
-            "Marvell AQC113C": 10000,
-            "Marvell AQC113CS": 10000
-        }
-        
-        for name, speed in defaults.items():
-            if name not in lookup:
-                lookup[name] = speed
                 
         return lookup
         

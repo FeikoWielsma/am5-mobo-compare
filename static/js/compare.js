@@ -876,10 +876,37 @@ function analyzeTable() {
 /**
  * Format LAN Controller cell to show badges and split lines per controller
  */
+/**
+ * Format LAN Controller cell to show badges and split lines per controller
+ */
 function formatLANDisplay(cell, text) {
-    if (!text) return;
+    // 1. Try Server-Side IDs first (Canonical)
+    const lanIdsRaw = cell.getAttribute('data-lan-ids');
+    let foundControllers = [];
 
-    const foundControllers = getLanControllers(text);
+    if (lanIdsRaw) {
+        try {
+            const ids = JSON.parse(lanIdsRaw);
+            // Map IDs to objects with speed from global lookup
+            if (ids && ids.length > 0) {
+                foundControllers = ids.map(id => {
+                    return {
+                        name: id,
+                        speed: (typeof LAN_SCORES !== 'undefined') ? (LAN_SCORES[id] || 0) : 0
+                    };
+                });
+            }
+        } catch (e) {
+            console.error('Failed to parse data-lan-ids', e);
+        }
+    }
+
+    // 2. Fallback to client-side parsing ONLY if server data missing (shouldn't happen with new loader)
+    if (foundControllers.length === 0 && text) {
+        // Legacy fallback if needed (or just return to show text)
+        // For now, let's assume if text exists but no IDs, we show text.
+        return;
+    }
 
     // If no controllers found, do nothing
     if (foundControllers.length === 0) return;
@@ -906,12 +933,6 @@ function formatLANDisplay(cell, text) {
         return '1G';
     };
 
-    // We only want to show each matched controller once, but carefully.
-    // Sometimes text is "Intel I226-V, Marvell AQC113C"
-    // We found both. We want to display them nicely.
-    // The original text might have extra info (like "Double 25G").
-    // Let's try to reconstruct decent display lines.
-
     foundControllers.forEach(c => {
         const speedLabel = getLabel(c.speed);
         let badgeClass = 'bg-secondary';
@@ -929,14 +950,6 @@ function formatLANDisplay(cell, text) {
                     <span class="badge ${badgeClass}">${displayLabel}</span>
                  </div>`;
     });
-
-    // Preserve tooltips if they existed in original cell?
-    // The original structure was commonly: <span tooltip> Text <i>icon</i> </span>
-    // Replacing innerHTML destroys the tooltip element.
-    // Ideally we append the formatted part or replace the text part.
-    // BUT the request is to clean it up.
-    // Let's replace the content but try to keep any 'note' logic if complex.
-    // For now, replacing with clean badges is likely what the user wants for "multi-line cleaner".
 
     cell.innerHTML = html;
 }
