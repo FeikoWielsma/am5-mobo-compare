@@ -97,18 +97,23 @@
                 <div class="d-flex justify-content-center gap-2">
                     {# BIOS Flash #}
                     {% if sc.get('bios_flash_btn') %}
-                    <i class="bi bi-lightning-charge-fill text-warning" title="BIOS Flash Button"></i>
+                    <img src="{{ url_for('static', filename='img/icons/bios-flash.svg') }}" class="custom-icon"
+                        title="BIOS Flash Button">
                     {% endif %}
 
                     {# Debug Features #}
                     {% if d_score >= 4 %}
-                    <i class="bi bi-display text-info" title="LCD Display"></i>
+                    <img src="{{ url_for('static', filename='img/icons/debug-lcd.svg') }}" class="custom-icon"
+                        title="LCD Display">
                     {% elif d_score == 3 %}
-                    <i class="bi bi-card-text text-primary" title="POST Code"></i>
+                    <img src="{{ url_for('static', filename='img/icons/debug-post.svg') }}" class="custom-icon"
+                        title="POST Code">
                     {% elif d_score == 2 %}
-                    <i class="bi bi-lightbulb-fill text-danger" title="Debug LED(s)"></i>
+                    <img src="{{ url_for('static', filename='img/icons/debug-led.svg') }}" class="custom-icon"
+                        title="Debug LED(s)">
                     {% elif d_score == 1 %}
-                    <i class="bi bi-power text-secondary" title="Power LED"></i>
+                    <img src="{{ url_for('static', filename='img/icons/debug-power.svg') }}" class="custom-icon"
+                        title="Power LED">
                     {% endif %}
 
                     {% if not sc.get('bios_flash_btn') and d_score == 0 %}
