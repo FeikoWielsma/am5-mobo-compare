@@ -11,16 +11,19 @@
                 </button>
                 <div>{{ m.brand }}</div>
                 <div class="fs-5">{{ m.model }}</div>
-                <div class="mt-1">
+                <div class="mt-1 d-flex flex-wrap justify-content-center gap-1 align-items-center">
                     {{ chipset_badge(m.chipset) }}
                     {{ ff_badge(m.form_factor) }}
-                </div>
 
-                {# Image View Link #}
-                {% if m.dot.rear_io_image.view %}
-                <div class="mt-2"><a href="{{ m.dot.rear_io_image.view }}" target="_blank"
-                        class="small text-light text-decoration-underline">View Image</a></div>
-                {% endif %}
+                    {# Image View Button (Modal Trigger) #}
+                    {% if m.dot.rear_io_image %}
+                    <button type="button" class="badge bg-secondary border-0 text-white text-decoration-none"
+                        data-bs-toggle="modal" data-bs-target="#ioModal" data-img-src="{{ m.dot.rear_io_image }}"
+                        data-mobo-model="{{ m.brand }} {{ m.model }}" title="View Rear I/O">
+                        <i class="bi bi-card-image"></i> I/O
+                    </button>
+                    {% endif %}
+                </div>
             </th>
             {% endfor %}
         </tr>
@@ -577,6 +580,24 @@
                 <i class="bi bi-chevron-down"></i> Rear I/O
                 <span class="collapsed-subsections-badge" data-parent="rear-io"></span>
             </th>
+        </tr>
+
+        <!-- Image Row -->
+        <tr class="table-light">
+            <th class="ps-5">I/O Image</th>
+            {% for m in mobos %}
+            <td class="text-center">
+                {% if m.dot.rear_io_image %}
+                <div style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#ioModal"
+                    data-img-src="{{ m.dot.rear_io_image }}" data-mobo-model="{{ m.brand }} {{ m.model }}">
+                    <img src="{{ m.dot.rear_io_image }}"
+                        style="max-height: 50px; border-radius: 4px; border: 1px solid #dee2e6;" alt="Rear I/O">
+                </div>
+                {% else %}
+                <span class="text-muted small">-</span>
+                {% endif %}
+            </td>
+            {% endfor %}
         </tr>
 
         <!-- Legacy -->

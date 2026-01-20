@@ -16,6 +16,7 @@ let allMobos = []; // Store fetched mobos for search
 
 document.addEventListener('DOMContentLoaded', () => {
     initStandardMode();
+    initModals();
 });
 
 
@@ -105,6 +106,26 @@ function initSearch() {
             if (!sInput.contains(e.target) && !sDropdown.contains(e.target)) {
                 sDropdown.style.display = 'none';
             }
+        });
+    }
+}
+
+function initModals() {
+    const ioModal = document.getElementById('ioModal');
+    if (ioModal) {
+        ioModal.addEventListener('show.bs.modal', function (event) {
+            // Button that triggered the modal
+            const button = event.relatedTarget;
+            // Extract info from data-* attributes
+            const imgSrc = button.getAttribute('data-img-src');
+            const modelName = button.getAttribute('data-mobo-model');
+
+            // Update the modal's content.
+            const modalTitle = ioModal.querySelector('.modal-title');
+            const modalImage = ioModal.querySelector('#ioModalImage');
+
+            modalTitle.textContent = 'Rear I/O: ' + modelName;
+            modalImage.src = imgSrc;
         });
     }
 }

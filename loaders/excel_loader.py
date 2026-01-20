@@ -122,6 +122,11 @@ def load_data():
                     value = cell.value
                     key = col_info['key']
                     
+                    # Handle Hyperlinks
+                    hyperlink_target = None
+                    if cell.hyperlink:
+                        hyperlink_target = cell.hyperlink.target
+                    
                     # Handle RichText / partially bolded cells
                     if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
                         full_str = ""
@@ -161,6 +166,15 @@ def load_data():
                         if cell.font and cell.font.bold:
                             record[f"{key}_bold"] = True
                     
+                    # If value is generic "LINK" etc and we have a hyperlink, use that
+                    str_val = str(record[key]).strip().upper()
+                    if hyperlink_target and (not record[key] or str_val in ["LINK", "GO", "HERE", "WEBSITE"]):
+                        record[key] = hyperlink_target
+                    # Special check for Website key specifically
+                    if "Website" in key and hyperlink_target:
+                         record[key] = hyperlink_target
+
+                    
                     # Check if this is the Model column and has a value
                     if key == 'Model' and record[key] and str(record[key]).strip():
                         has_model = True
@@ -177,7 +191,14 @@ def load_data():
                 
                 # Only add record if it has a Model (skip empty rows)
                 if has_model:
+                    # Store row index for image mapping
+                    record['_row_idx'] = row_idx
                     records.append(record)
+            
+            # Step 5a: Extract Images
+            # Map images to records based on row index and known 'Rear I/O Image' column
+            process_sheet_images(ws, records, valid_cols, sheet_name)
+
             
             # Step 6: Process each motherboard record
             
@@ -339,6 +360,103 @@ def load_lan_lookup():
     except Exception as e:
         print(f"Error loading LAN lookup: {e}")
         return {}
+
+
+def process_sheet_images(worksheet, records, cols_info, sheet_name):
+    """
+    Extracts floating images from worksheet and maps them to records.
+    Saves images to static/img/io/{id}_io.png
+    """
+    import os
+    from PIL import Image
+    import io
+
+    # Find Rear I/O Image column index
+    io_col_idx = -1
+    io_key = ""
+    for c in cols_info:
+        if 'Rear I/O Image' in c['key']:
+            io_col_idx = c['col_idx'] + 1 # 1-based
+            io_key = c['key']
+            break
+    
+    if io_col_idx == -1:
+        return
+
+    # Create output dir
+    output_dir = os.path.join("static", "img", "io")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Map row_idx to record for fast lookup
+    row_map = {r['_row_idx']: r for r in records}
+    
+    # Check for images
+    if not hasattr(worksheet, '_images'):
+        return
+
+    print(f"  Processing {len(worksheet._images)} images for Rear I/O...")
+    
+    for img in worksheet._images:
+        # Check anchor
+        anchor = img.anchor
+        # Handle different anchor types (OneCell vs TwoCell)
+        # We need the top-left cell (from)
+        col = -1
+        row = -1
+        
+        if hasattr(anchor, '_from'):
+             col = anchor._from.col + 1 # Convert to 1-based
+             row = anchor._from.row + 1
+        
+        # Check if in target column (allow small tolerance if needed, but exact col is safer)
+        # Some cols might be merged, but anchor usually points to top-left.
+        # Let's match exact column of the header.
+        if col == io_col_idx:
+             # Find record
+             if row in row_map:
+                 record = row_map[row]
+                 # Generate ID (mimic logic in load_data loop)
+                 model = record.get('Model', 'Unknown')
+                 # Sanitize filename (remove invalid chars for Windows)
+                 safe_model = str(model).strip()
+                 # Replace common separators
+                 safe_model = safe_model.replace(' ', '_').replace('/', '-').replace('\\', '-')
+                 # Remove invalid chars: < > : " / \ | ? * and control chars
+                 import re
+                 safe_model = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', safe_model)
+                 
+                 unique_id = f"{sheet_name}_{records.index(record)}_{safe_model}"
+                 
+                 filename = f"{unique_id}_io.png"
+                 filepath = os.path.join(output_dir, filename)
+                 
+                 try:
+                     # Save image
+                     # img.ref is the PIL image or bytes? openpyxl Image has .ref (BytesIO) or .path
+                     # Actually openpyxl.drawing.image.Image usually wraps PIL
+                     
+                     pil_img = None
+                     if hasattr(img, 'ref') and img.ref: # BytesIO
+                         pil_img = Image.open(img.ref)
+                     elif hasattr(img, 'image'): # Sometimes .image attribute
+                         pil_img = img.image
+                     elif hasattr(img, 'fp'):
+                         pil_img = Image.open(img.fp)
+                     else:
+                         # Attempt to construct from binary data if possible, or skip
+                         pass
+                     
+                     if pil_img:
+                         # Convert to RGB if needed (e.g. if RGBA/P) - PNG supports RGBA though
+                         pil_img.save(filepath, "PNG")
+                         
+                         # Update record with relative web path
+                         # Use forward slashes for URL
+                         web_path = f"/static/img/io/{filename}"
+                         record[io_key] = web_path
+                 except Exception as e:
+                     print(f"    Failed to save image for row {row}: {e}")
+
 
 
 if __name__ == "__main__":

@@ -278,6 +278,11 @@ def parse_multi_level_headers(worksheet, start_row, end_row):
              if 'Power' not in clean_parents:
                  clean_parents = ['Power', 'VRM Configuration']
 
+        # Normalize 'Links' to 'Links|Website' (Common in B650)
+        if leaf_val == 'Links':
+             clean_parents = ['Links']
+             leaf_val = 'Website'
+
         # -----------------------------------------------------
 
         # Build key

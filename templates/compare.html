@@ -10,6 +10,22 @@
     {% include 'partials/compare_table.html' %}
 </div>
 
+<!-- Rear I/O Image Modal -->
+<div class="modal fade" id="ioModal" tabindex="-1" aria-labelledby="ioModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-light" id="ioModalLabel">Rear I/O View</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-0 bg-secondary">
+                <img id="ioModalImage" src="" class="img-fluid" alt="Rear I/O" style="max-height: 80vh;">
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
