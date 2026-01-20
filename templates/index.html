@@ -117,7 +117,6 @@
     <select id="featureSelectorTemplate">
         <option value="">-- Pick Feature --</option>
         {%- macro render_options_tpl(items, path_labels=[]) -%}
-        {%- set excluded_keys = ['brand', 'model', 'chipset', 'form_factor'] -%}
         {%- for item in items -%}
         {%- if item.children -%}
         {%- if path_labels|length == 0 -%}
@@ -127,7 +126,7 @@
         {%- else -%}
         {{ render_options_tpl(item.children, path_labels + [item.name]) }}
         {%- endif -%}
-        {%- elif item.key and item.key not in excluded_keys -%}
+        {%- elif item.key -%}
         <option value="{{ item.key }}">
             {{ (path_labels[1:] + [item.name]) | join(' > ') if path_labels|length > 1 else item.name }}
         </option>

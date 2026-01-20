@@ -35,6 +35,9 @@ def index():
     structure = service.get_structure()
     service.inject_lan_speed_structure(structure)
     
+    # Filter out standard columns from dropdown
+    structure = service.filter_structure_drop_standard(structure)
+    
     return render_template('index.html', mobos=mobos, structure=structure)
 
 

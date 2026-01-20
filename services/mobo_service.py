@@ -142,3 +142,46 @@ class MoboService:
             m['LanSpeed'] = speed_label
             
         return mobo_dicts
+
+    def filter_structure_drop_standard(self, structure):
+        """
+        Recursively filters out Brand, Chipset, Model, and Form Factor from structure.
+        Also removes empty groups that result from this filtering.
+        """
+        if not structure:
+            return []
+            
+        filtered_structure = []
+        excluded_names = {'Brand', 'Chipset', 'Model', 'Form Factor', 'Website', 'Rear I/O Image'}
+        # Specific known keys to exclude if they don't match by name for some reason
+        excluded_keys = {
+            'Brand', 
+            'Chipset', 
+            'Model', 
+            'Motherboard|General|Form Factor',
+            'Links|Website',
+            'Rear I/O Image'
+        }
+        
+        for item in structure:
+            # Check exclusions
+            if item.get('name') in excluded_names:
+                continue
+            if item.get('key') in excluded_keys:
+                continue
+                
+            # Process children
+            if 'children' in item:
+                filtered_children = self.filter_structure_drop_standard(item['children'])
+                # If it was a group (has children key) and now empty, skip it
+                if not filtered_children:
+                    continue
+                
+                # Create a copy to avoid mutating the original cached structure
+                new_item = item.copy()
+                new_item['children'] = filtered_children
+                filtered_structure.append(new_item)
+            else:
+                filtered_structure.append(item)
+                
+        return filtered_structure
