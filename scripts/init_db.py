@@ -2,7 +2,6 @@ import sys
 import os
 from sqlalchemy.orm import Session
 
-# Add project root to sys.path
 sys.path.append(os.getcwd())
 
 from models import get_engine, Base, Motherboard, Structure, LanController
@@ -17,12 +16,15 @@ def init_db():
     
     print("Loading data from Excel...")
     try:
-        # load_data now returns list of dicts with 'specs' key populated
         mobo_data, header_tree = load_data()
         lan_data = load_lan_lookup()
     except Exception as e:
         print(f"Error loading data: {e}")
-        return
+        sys.exit(1)
+
+    if not mobo_data:
+        print("Error: No motherboard data was loaded! The Excel sheet might be empty.")
+        sys.exit(1) 
 
     print(f"Inserting {len(mobo_data)} motherboards, structure, and {len(lan_data)} LAN controllers...")
     
@@ -39,7 +41,7 @@ def init_db():
                 model=m['model'],
                 chipset=m['chipset'],
                 form_factor=m['form_factor'],
-                specs=m['specs'] # The full hierarchy
+                specs=m['specs'] 
             )
             session.add(entry)
             

@@ -132,18 +132,51 @@ function parseValue(text, fieldName) {
     if (!text || text === '-' || text === '') return null;
 
     // Custom LAN Controller parsing
-    // Now primarily handled by server-side scoring (data-server-score),
-    // but leaving this for fallback or sort logic if needed.
-    // Actually, analyzeTable uses data-server-score first, so this might not be reached for sorting
-    // if the HTML attribute is present.
-    // But compare.js L703 checks data-server-score BEFORE calling parseValue.
-    // So we can probably simplify this or just return null to let the server score take precedence.
     if (fieldName && fieldName.includes('LAN Controller')) {
-        // If we are here, it means analyzeTable didn't find a data-server-score attribute
-        // or we are parsing raw text for some other reason.
-        // Since we removed getLanControllers, we can't parse it here easily.
-        // Return null/0 to default to string comparison or 0.
-        return { text, score: 0, isNumeric: false };
+        const scores = window.LAN_SCORES || {};
+        const lower = text.toLowerCase();
+        let totalScore = 0;
+        let found = false;
+
+        const matchedNames = new Set();
+        // Sort names by length descending to match longest possible strings first (e.g. RTL8111H before RTL8111)
+        const sortedNames = Object.keys(scores).sort((a, b) => b.length - a.length);
+
+        const normalizedText = lower.replace(/-/g, '').replace(/\s+/g, '');
+
+        for (const name of sortedNames) {
+            const score = scores[name];
+            const normalizedTag = name.toLowerCase().replace(/-/g, '').replace(/\s+/g, '');
+            const rltkTag = normalizedTag.startsWith('realtek') ? normalizedTag.replace('realtek', 'rltk') : null;
+
+            let isPresent = normalizedText.includes(normalizedTag) || (rltkTag && normalizedText.includes(rltkTag));
+
+            if (isPresent) {
+                let isAlreadyMatched = false;
+                for (const alreadyMatched of matchedNames) {
+                    if (alreadyMatched.includes(normalizedTag) || (rltkTag && alreadyMatched.includes(rltkTag))) {
+                        isAlreadyMatched = true;
+                        break;
+                    }
+                }
+
+                if (!isAlreadyMatched) {
+                    // BEFORE adding, check if THIS new match is a SUPERSET of any existing matches
+                    // If it is, we should replace the smaller match with this one.
+                    // But with sortedNames (longest first), this case should NOT happen if matchedNames
+                    // contains the SUPERSET.
+                    // The issue is if "realtekrtl8111" matched "realtekrtl8111h" in the text.
+                    // We need to ensure "realtekrtl8111" doesn't match if it's part of a longer string we already matched.
+
+                    totalScore += score;
+                    found = true;
+                    matchedNames.add(normalizedTag);
+                    if (rltkTag) matchedNames.add(rltkTag);
+                }
+            }
+        }
+
+        return { text, score: totalScore, isNumeric: found };
     }
 
     // Custom Wireless parsing

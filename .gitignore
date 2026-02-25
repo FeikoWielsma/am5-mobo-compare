@@ -215,7 +215,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 # Excel Data
-*.xlsx
 ~$*.xlsx
 # mobo.db is committed for Render deployment
 .vscode/settings.json
+*.png
