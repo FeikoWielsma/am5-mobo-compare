@@ -28,9 +28,6 @@ jobs:
       - name: Fetch latest spreadsheet
         run: python scripts/fetch_sheet.py
 
-      - name: Build database
-        run: python scripts/init_db.py
-
       - name: Install bws CLI
         shell: sh
         run: |
@@ -41,7 +38,13 @@ jobs:
         shell: sh
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-        run: bws run -- sh -c 'echo "$REGISTRY_TOKEN" | docker login git.feikowielsma.nl -u feiko --password-stdin'
+        run: |
+          REGISTRY_TOKEN=$(/usr/local/bin/bws run -- printenv REGISTRY_TOKEN)
+          if [ -z "$REGISTRY_TOKEN" ]; then
+            echo "Error: REGISTRY_TOKEN is empty"
+            exit 1
+          fi
+          echo "$REGISTRY_TOKEN" | docker login git.feikowielsma.nl -u feiko --password-stdin
 
       - name: Build and Push
         shell: sh

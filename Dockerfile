@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your app code (including the .db file!)
 COPY . .
 
+RUN python scripts/init_db.py
+
 # Cloud Run injects a PORT environment variable.
 # We need to tell the container to listen on that port.
 ENV PORT=8080
