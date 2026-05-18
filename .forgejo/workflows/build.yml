@@ -34,8 +34,8 @@ jobs:
       - name: Install bws CLI
         shell: sh
         run: |
-          curl -Lo /tmp/bws.zip https://github.com/bitwarden/sdk-sm/releases/latest/download/bws-x86_64-unknown-linux-gnu.zip
-          unzip /tmp/bws.zip bws -d /usr/local/bin
+          curl -sLl https://bws.bitwarden.com/install | sh -s -- --install-dir /usr/local/bin --force
+          chmod +x /usr/local/bin/bws
 
       - name: Login to Forgejo Registry
         shell: sh
