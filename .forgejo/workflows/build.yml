@@ -1,0 +1,47 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - staging
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: docker-build
+    steps:
+      - name: Checkout
+        uses: https://github.com/actions/checkout@v4
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Fetch latest spreadsheet
+        run: python scripts/fetch_sheet.py
+
+      - name: Build database
+        run: python scripts/init_db.py
+
+      - name: Install bws CLI
+        shell: sh
+        run: |
+          curl -Lo /tmp/bws.zip https://github.com/bitwarden/sdk-sm/releases/latest/download/bws-x86_64-unknown-linux-gnu.zip
+          unzip /tmp/bws.zip bws -d /usr/local/bin
+
+      - name: Login to Forgejo Registry
+        shell: sh
+        env:
+          BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+        run: bws run -- sh -c 'echo "$REGISTRY_TOKEN" | docker login git.feikowielsma.nl -u feiko --password-stdin'
+
+      - name: Build and Push
+        shell: sh
+        run: |
+          docker build -t git.feikowielsma.nl/feiko/am5-mobo-compare:staging .
+          docker push git.feikowielsma.nl/feiko/am5-mobo-compare:staging
