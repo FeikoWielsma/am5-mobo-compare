@@ -19,8 +19,11 @@ jobs:
       - name: Checkout
         uses: https://github.com/actions/checkout@v4
 
+      - name: Set up uv
+        uses: https://github.com/astral-sh/setup-uv@v5
+
       - name: Install Python deps
-        run: pip install -r requirements.txt
+        run: uv pip install --system -r requirements.txt --break-system-packages
 
       - name: Fetch latest spreadsheet
         run: python scripts/fetch_sheet.py
