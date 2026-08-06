@@ -384,7 +384,8 @@ def process_sheet_images(worksheet, records, cols_info, sheet_name):
         return
 
     # Create output dir
-    output_dir = os.path.join("static", "img", "io")
+    from loaders.config import IO_IMAGE_DIR
+    output_dir = IO_IMAGE_DIR
     os.makedirs(output_dir, exist_ok=True)
     
     # Map row_idx to record for fast lookup

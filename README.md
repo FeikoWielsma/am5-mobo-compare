@@ -45,10 +45,13 @@ A powerful, interactive web application to browse, filter, and compare AMD AM5 m
 
 ### Local Development
 
+The repository uses **Git LFS** for the source spreadsheet, so make sure
+`git lfs install` has been run before cloning.
+
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/mobo-parse.git
-   cd mobo-parse
+   git clone https://github.com/FeikoWielsma/am5-mobo-compare.git
+   cd am5-mobo-compare
    ```
 
 2. **Install dependencies**:
@@ -56,17 +59,28 @@ A powerful, interactive web application to browse, filter, and compare AMD AM5 m
    pip install -r requirements.txt
    ```
 
-3. **Initialize the database (optional)**:
-   The repository includes a pre-populated `mobo.db`. To rebuild it from the Excel sheet:
+3. **Build the database** (required on first run, ~30s):
    ```bash
    python scripts/init_db.py
    ```
+   This parses the committed spreadsheet into `mobo.db` and extracts the rear
+   I/O images into `static/img/io/`. Both are generated artifacts and are not
+   committed — re-run this whenever the spreadsheet changes.
 
 4. **Run the app**:
    ```bash
    python app.py
    ```
    Visit `http://localhost:5000` in your browser.
+
+### Running the tests
+
+```bash
+python -m playwright install chromium   # once, for the browser tests
+python -m pytest
+```
+
+The suite starts its own Flask server, so nothing needs to be running first.
 
 ---
 

@@ -1,12 +1,11 @@
 import pytest
 from playwright.sync_api import Page, expect
 
-# Assumption: app.py is running on localhost:5000
-BASE_URL = "http://localhost:5000"
+# The `live_server` fixture (tests/conftest.py) starts app.py on its own port.
 
-def test_index_loads_data(page: Page):
+def test_index_loads_data(page: Page, live_server):
     """Test that the index page loads and renders the table with data."""
-    page.goto(BASE_URL)
+    page.goto(live_server)
     
     # Check Title
     expect(page).to_have_title("AM5 Motherboard DB")
@@ -25,9 +24,9 @@ def test_index_loads_data(page: Page):
     badge = page.locator("#countDisplay")
     expect(badge).to_contain_text("motherboards")
 
-def test_global_search(page: Page):
+def test_global_search(page: Page, live_server):
     """Test global search filtering."""
-    page.goto(BASE_URL)
+    page.goto(live_server)
     
     # Wait for data load
     page.wait_for_selector(".mobo-row")
@@ -57,9 +56,9 @@ def test_global_search(page: Page):
     first_text = visible_rows.first.inner_text()
     assert first_model in first_text
 
-def test_brand_filter(page: Page):
+def test_brand_filter(page: Page, live_server):
     """Test filtering by Brand dropdown."""
-    page.goto(BASE_URL)
+    page.goto(live_server)
     
     # Use existing data to pick a brand
     brand_header = page.locator(".filter-dropdown[data-col='brand']")
@@ -104,9 +103,9 @@ def test_brand_filter(page: Page):
 
 import re # Need re for regex
 
-def test_sorting(page: Page):
+def test_sorting(page: Page, live_server):
     """Test sorting by clicking headers."""
-    page.goto(BASE_URL)
+    page.goto(live_server)
     
     # Sorting headers have .sortable class for static columns
     # Brand header is likely index 1 (after checkbox)
@@ -128,9 +127,9 @@ def test_sorting(page: Page):
     brand_header.click()
     expect(indicator).to_have_text("▼")
 
-def test_add_remove_dynamic_column(page: Page):
+def test_add_remove_dynamic_column(page: Page, live_server):
     """Test adding and removing a dynamic column."""
-    page.goto(BASE_URL)
+    page.goto(live_server)
     
     # Click Add Column
     add_btn = page.locator("#addDynamicColBtn")
@@ -172,9 +171,9 @@ def test_add_remove_dynamic_column(page: Page):
     # Wait for count to decrease
     expect(page.locator(".dynamic-col-header")).to_have_count(header_count - 1)
 
-def test_row_selection_and_compare(page: Page):
+def test_row_selection_and_compare(page: Page, live_server):
     """Test selecting rows and clicking Compare."""
-    page.goto(BASE_URL)
+    page.goto(live_server)
     
     # Select first two rows
     rows = page.locator(".mobo-row")

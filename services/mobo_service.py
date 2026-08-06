@@ -7,7 +7,7 @@ class MoboService:
 
     def get_structure(self):
         """Fetches the Header Tree structure."""
-        struct = self.session.query(Structure).get(1)
+        struct = self.session.get(Structure, 1)
         return struct.content if struct else []
 
     def get_all_mobos(self):

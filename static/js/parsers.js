@@ -78,10 +78,6 @@ function getCustomRank(fieldName, value) {
     return null;
 }
 
-// LAN Controller parsing is now handled server-side (data_transformer.py)
-// and passed via data-lan-ids attribute.
-// Legacy functions removed.
-
 /**
  * Parse VRM configuration strings like "2x10+2+2" into total phase count
  */

@@ -5,6 +5,8 @@ This module centralizes all configuration parameters used during Excel parsing,
 making it easy to adjust thresholds and patterns without touching core logic.
 """
 
+import os
+
 # Excel file and sheets to process
 EXCEL_FILE = "AM5 Motherboards Sheet (X870_X670_B850_B650_B840_A620).xlsx"
 SHEETS_TO_LOAD = ['X870E', 'X670(E)', 'X870', 'B850', 'B650(E)', 'B840', 'A620(A)']
@@ -22,3 +24,12 @@ SKIP_HEADER_PATTERNS = [
 
 # Special identity columns that should remain flat (not hierarchical)
 IDENTITY_COLUMNS = ['Brand', 'Model', 'Chipset']
+
+# Filesystem directory that extracted rear I/O images are written to.
+# Overridable via MOBO_IO_IMAGE_DIR so the test suite can redirect extraction
+# to a temp dir instead of writing into the served static assets.
+# Note: this is the *write* location only -- the URL the app serves them from
+# is always /static/img/io/.
+IO_IMAGE_DIR = os.environ.get(
+    "MOBO_IO_IMAGE_DIR", os.path.join("static", "img", "io")
+)

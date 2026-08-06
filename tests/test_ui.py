@@ -1,25 +1,17 @@
 import pytest
 from playwright.sync_api import Page, expect
 import re
-import requests
 
-@pytest.fixture(scope="module")
-def valid_ids():
-    """Fetch valid IDs from the running local server API."""
-    try:
-        response = requests.get("http://localhost:5000/api/mobos")
-        response.raise_for_status()
-        data = response.json()
-        return [str(m['id']) for m in data]
-    except Exception as e:
-        pytest.skip(f"Could not fetch valid IDs from localhost:5000: {e}")
+# `valid_ids` and `live_server` come from tests/conftest.py. They deliberately
+# fail rather than skip -- a server that won't start should break the run, not
+# quietly turn these into passes.
 
-def test_compare_page_toggles(page: Page, valid_ids):
+def test_compare_page_toggles(page: Page, valid_ids, live_server):
     if len(valid_ids) < 2:
         pytest.skip("Not enough motherboards in DB to test comparison.")
         
     ids = ",".join(valid_ids[:2])
-    page.goto(f"http://localhost:5000/compare?ids={ids}") 
+    page.goto(f"{live_server}/compare?ids={ids}") 
 
     # 2. Check "Hide Identical Values"
     toggle_hide = page.locator("#hideSameToggle")
@@ -55,7 +47,7 @@ def test_compare_page_toggles(page: Page, valid_ids):
     toggle_diff.uncheck()
     expect(page.locator("#compareTable")).not_to_have_class(re.compile(r"highlight-diffs"))
 
-def test_add_remove_flow(page: Page, valid_ids):
+def test_add_remove_flow(page: Page, valid_ids, live_server):
     if not valid_ids:
         pytest.skip("No motherboards available.")
     
@@ -65,7 +57,7 @@ def test_add_remove_flow(page: Page, valid_ids):
         
     # Expect the API call to happen
     with page.expect_response("**/api/mobos") as response_info:
-        page.goto("http://localhost:5000/compare")
+        page.goto(f"{live_server}/compare")
     
     # Ensure checking response succeeded (optional but good practice)
     assert response_info.value.ok
@@ -105,13 +97,13 @@ def test_add_remove_flow(page: Page, valid_ids):
     # Verify removal checking counts or URL
     expect(mobo_headers).to_have_count(0)
 
-def test_url_persistence(page: Page, valid_ids):
+def test_url_persistence(page: Page, valid_ids, live_server):
     """Test that reloading the page keeps the selected motherboards."""
     if not valid_ids:
         pytest.skip("No motherboards available.")
         
     id_to_test = valid_ids[0]
-    page.goto(f"http://localhost:5000/compare?ids={id_to_test}")
+    page.goto(f"{live_server}/compare?ids={id_to_test}")
     
     # Verify table loads
     expect(page.locator(".group-header")).to_have_count(1)
@@ -123,13 +115,13 @@ def test_url_persistence(page: Page, valid_ids):
     expect(page.locator(".group-header")).to_have_count(1)
     expect(page).to_have_url(re.compile(f"ids={id_to_test}"))
 
-def test_section_collapse(page: Page, valid_ids):
+def test_section_collapse(page: Page, valid_ids, live_server):
     """Test that clicking a section header collapses/expands its rows."""
     if not valid_ids:
         pytest.skip("No motherboards available.")
         
     id_to_test = valid_ids[0]
-    page.goto(f"http://localhost:5000/compare?ids={id_to_test}")
+    page.goto(f"{live_server}/compare?ids={id_to_test}")
     
     # Find a section header, e.g., "General"
     # We can assume 'General' exists or find any .section-header
@@ -167,13 +159,13 @@ def test_section_collapse(page: Page, valid_ids):
     section_header.click()
     expect(icon).to_have_class(re.compile("bi-chevron-down"))
 
-def test_sticky_header_structure(page: Page, valid_ids):
+def test_sticky_header_structure(page: Page, valid_ids, live_server):
     """Verify that table headers have the necessary classes for sticky behavior."""
     if not valid_ids:
         pytest.skip("No motherboards available.")
     
     ids = ",".join(valid_ids[:2])
-    page.goto(f"http://localhost:5000/compare?ids={ids}")
+    page.goto(f"{live_server}/compare?ids={ids}")
     
     # Check .sticky-header class on thead
     # Actually, inspect `compare.html`: 

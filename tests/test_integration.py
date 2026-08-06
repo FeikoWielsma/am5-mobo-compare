@@ -8,63 +8,63 @@ import json
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from loaders import load_data, unflatten_record
+from loaders import unflatten_record
 from models.database import DotWrapper
 
 
 class TestDataLoaderIntegration:
     """Integration tests for full data loading pipeline."""
-    
+
     @pytest.mark.slow
-    def test_load_data_returns_tuple(self):
+    def test_load_data_returns_tuple(self, loaded_data):
         """Test load_data returns (mobos, structure) tuple."""
-        mobos, structure = load_data()
+        mobos, structure = loaded_data
         assert isinstance(mobos, list)
         assert isinstance(structure, list)
-    
+
     @pytest.mark.slow
-    def test_load_data_has_motherboards(self):
+    def test_load_data_has_motherboards(self, loaded_data):
         """Test load_data returns motherboard records."""
-        mobos, structure = load_data()
+        mobos, structure = loaded_data
         assert len(mobos) > 0, "Should load at least one motherboard"
-    
+
     @pytest.mark.slow
-    def test_mobo_record_structure(self):
+    def test_mobo_record_structure(self, loaded_data):
         """Test motherboard record has expected structure."""
-        mobos, structure = load_data()
+        mobos, structure = loaded_data
         mobo = mobos[0]
-        
+
         # Check required fields
         assert 'id' in mobo
         assert 'brand' in mobo
         assert 'model' in mobo
         assert 'chipset' in mobo
         assert 'specs' in mobo
-        
+
         # Check specs is a nested dict
         assert isinstance(mobo['specs'], dict)
-    
+
     @pytest.mark.slow
-    def test_specs_contains_nested_data(self):
+    def test_specs_contains_nested_data(self, loaded_data):
         """Test specs contains properly nested data."""
-        mobos, structure = load_data()
+        mobos, structure = loaded_data
         mobo = mobos[0]
         specs = mobo['specs']
-        
+
         # Should have some top-level sections
         assert len(specs) > 0
-        
+
         # At least one should be nested
         has_nested = any(isinstance(v, dict) for v in specs.values())
         assert has_nested, "Specs should contain nested dictionaries"
-    
+
     @pytest.mark.slow
-    def test_structure_is_tree(self):
+    def test_structure_is_tree(self, loaded_data):
         """Test structure is a valid tree."""
-        mobos, structure = load_data()
-        
+        mobos, structure = loaded_data
+
         assert len(structure) > 0, "Structure should not be empty"
-        
+
         # Check first node structure
         node = structure[0]
         assert 'name' in node
@@ -74,28 +74,28 @@ class TestDataLoaderIntegration:
 
 class TestDotWrapperIntegration:
     """Test DotWrapper works with real loaded data."""
-    
+
     @pytest.mark.slow
-    def test_dotwrapper_with_real_data(self):
+    def test_dotwrapper_with_real_data(self, loaded_data):
         """Test DotWrapper can access real loaded data."""
-        mobos, structure = load_data()
+        mobos, structure = loaded_data
         mobo = mobos[0]
-        
+
         # Wrap specs in DotWrapper
         wrapper = DotWrapper(mobo['specs'])
-        
+
         # Should be able to access brand/model if they exist
         # (they might be in specs or at top level)
         assert wrapper is not None
-    
+
     @pytest.mark.slow
-    def test_dotwrapper_fuzzy_access_real_data(self):
+    def test_dotwrapper_fuzzy_access_real_data(self, loaded_data):
         """Test DotWrapper fuzzy matching on real data."""
-        mobos, structure = load_data()
+        mobos, structure = loaded_data
         mobo = mobos[0]
-        
+
         wrapper = DotWrapper(mobo['specs'])
-        
+
         # Try to access something we know exists (General section)
         # Use fuzzy matching
         general = wrapper.general

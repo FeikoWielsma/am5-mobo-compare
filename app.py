@@ -54,14 +54,11 @@ def compare():
     
     # Sort them using service logic
     sorted_mobos = service.sort_mobos(selected_mobos)
-    
-    # Get Structure (Header Tree)
-    structure = service.get_structure()
-    
+
     # Get LAN Lookup
     lan_lookup = service.get_lan_lookup()
-    
-    return render_template('compare.html', mobos=sorted_mobos, structure=structure, lan_lookup=lan_lookup)
+
+    return render_template('compare.html', mobos=sorted_mobos, lan_lookup=lan_lookup)
 
 @app.route('/api/mobos')
 def api_mobos():
@@ -72,4 +69,8 @@ def api_mobos():
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    # Debug (and its auto-reloader) is on by default for local dev, but the
+    # test suite disables it -- the reloader forks a child process that
+    # survives terminating the parent.
+    debug = os.environ.get('FLASK_DEBUG', '1').lower() not in ('0', 'false', 'no')
+    app.run(debug=debug, host='0.0.0.0', port=port)

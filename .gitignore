@@ -216,6 +216,13 @@ __marimo__/
 .streamlit/secrets.toml
 # Excel Data
 ~$*.xlsx
-# mobo.db is committed for Render deployment
 .vscode/settings.json
-*.png
+
+# Generated build artifacts.
+# Both are produced by scripts/init_db.py from the committed spreadsheet:
+# the Docker build regenerates them, and local dev creates them on first run.
+# Do not commit them -- a 5MB binary DB and ~600 PNGs churned on every data
+# refresh, and the row-position-derived filenames mean a refresh leaves stale
+# orphans behind.
+mobo.db
+static/img/io/
