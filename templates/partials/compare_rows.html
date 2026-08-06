@@ -1,0 +1,107 @@
+{#
+    Bespoke cell renderers, dispatched by the `name` on a COMPARE_LAYOUT
+    custom row. Everything here needs markup a plain spec lookup can't
+    express: precomputed scorecard fields, line-broken lane lists, links,
+    images. Anything that is just "print the value at this path" belongs in
+    COMPARE_LAYOUT as a value/cell row instead.
+
+    Each macro renders the <td> elements only -- the surrounding <tr> and the
+    label <th> come from compare_table.html.
+#}
+{% from 'macros.html' import cell %}
+
+{% macro custom_cells(name, mobos) %}
+{%- if name == 'lan_controller' -%}
+    {% for m in mobos %} <td class="text-center small"
+        data-lan-ids='{{ m.specs.get("_lan_ids", []) | tojson | safe }}'>{{
+        cell(m.dot.general.networking.ethernet.lan,
+        m.dot.general.networking.ethernet.lan_comment, score=m.specs.get('_lan_score')) }}</td> {%
+    endfor %}
+
+{%- elif name == 'io_image' -%}
+    {% for m in mobos %}
+    <td class="text-center">
+        {% if m.dot.rear_io_image %}
+        <div style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#ioModal"
+            data-img-src="{{ m.dot.rear_io_image }}" data-mobo-model="{{ m.brand }} {{ m.model }}">
+            <img src="{{ m.dot.rear_io_image }}"
+                style="max-height: 50px; border-radius: 4px; border: 1px solid #dee2e6;" alt="Rear I/O">
+        </div>
+        {% else %}
+        <span class="text-muted small">-</span>
+        {% endif %}
+    </td>
+    {% endfor %}
+
+{%- elif name == 'pcie_x16_electrical' -%}
+    {% for m in mobos %}
+    {% set sc = m.specs.get('_scorecard', {}) %}
+    <td class="text-center small">
+        <div
+            class="d-inline-block text-start {% if sc.get('pcie_x16_cpu') and not sc.get('pcie_x16_lanes_html') %}fw-bold{% endif %}">
+            {{ cell((sc.get('pcie_x16_lanes_html') if sc.get('pcie_x16_lanes_html') else
+            sc.get('pcie_x16_lanes', '-')) | replace(', ', '<br>') |
+            replace(',', '<br>') | replace(' ', '<br>') | safe ,
+            sc.get('pcie_x16_comment')) }}
+        </div>
+    </td> {% endfor %}
+
+{%- elif name == 'pcie_x16_total' -%}
+    {% for m in mobos %}
+    {% set sc = m.specs.get('_scorecard', {}) %}
+    <td class="text-center">{{ sc.get('pcie_x16_total', '-') }}</td>
+    {% endfor %}
+
+{%- elif name == 'pcie_x1x4_electrical' -%}
+    {% for m in mobos %} <td class="text-center small">
+        <div class="d-inline-block text-start">
+            {{ m.dot.expansion.pcie_slots.physical_x1x4.electrical_lanes | replace(', ', '<br>') |
+            replace(',', '<br>') | replace(' ', '<br>') | safe }}
+        </div>
+    </td> {% endfor %}
+
+{%- elif name == 'pcie_total_slots' -%}
+    {% for m in mobos %} <td class="text-center">{{ cell(m.dot.expansion.pcie_slots.total_slot_count,
+        m.dot.expansion.pcie_slots.total_slot_count_comment | replace(' -', '<br>-') | replace(' x',
+        '<br>x') | safe) }}</td> {%
+    endfor %}
+
+{%- elif name == 'm2_m' -%}
+    {% for m in mobos %} <td class="text-center">{{ cell(m.dot.expansion.storage.pcie_storage.m2_m | replace('
+        ',
+        '<br>') | safe, m.dot.expansion.storage.pcie_storage.m2_m_comment) }}</td> {% endfor %}
+
+{%- elif name == 'website' -%}
+    {% for m in mobos %}
+    <td class="text-center">
+        {% if m.dot.links.website %}
+        <a href="{{ m.dot.links.website }}" target="_blank">Official Page</a>
+        {% endif %}
+    </td>
+    {% endfor %}
+
+{%- elif name == 'io_image_link' -%}
+    {% for m in mobos %}
+    <td class="text-center">
+        {% if m.dot.rear_io_image.view %}
+        <a href="{{ m.dot.rear_io_image.view }}" target="_blank">View Image</a>
+        {% endif %}
+    </td>
+    {% endfor %}
+
+{%- elif name == 'notes' -%}
+    {% for m in mobos %}
+    <td class="text-center small text-muted">
+        {% if m.dot.notes and m.dot.notes.details %}
+        {{ m.dot.notes.details | replace(' - ', '<br>- ') | safe }}
+        {% else %}
+        -
+        {% endif %}
+    </td>
+    {% endfor %}
+
+{%- else -%}
+    {# Unknown renderer: fail loudly rather than silently emitting empty cells. #}
+    {{ undefined_custom_renderer(name) }}
+{%- endif -%}
+{% endmacro %}

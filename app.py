@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, g
 from models import get_engine, get_session_factory
 from services import MoboService
+from services.compare_layout import COMPARE_LAYOUT, resolve_spec
 
 app = Flask(__name__)
 
@@ -58,7 +59,13 @@ def compare():
     # Get LAN Lookup
     lan_lookup = service.get_lan_lookup()
 
-    return render_template('compare.html', mobos=sorted_mobos, lan_lookup=lan_lookup)
+    return render_template(
+        'compare.html',
+        mobos=sorted_mobos,
+        lan_lookup=lan_lookup,
+        layout=COMPARE_LAYOUT,
+        resolve_spec=resolve_spec,
+    )
 
 @app.route('/api/mobos')
 def api_mobos():
