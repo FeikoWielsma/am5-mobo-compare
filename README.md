@@ -5,7 +5,7 @@ A powerful, interactive web application to browse, filter, and compare AMD AM5 m
 ![Flask](https://img.shields.io/badge/flask-%23000.svg?style=for-the-badge&logo=flask&logoColor=white)
 ![SQLAlchemy](https://img.shields.io/badge/sqlalchemy-%23d71f00.svg?style=for-the-badge&logo=sqlalchemy&logoColor=white)
 ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white)
-![Render](https://img.shields.io/badge/Render-%2346E3B7.svg?style=for-the-badge&logo=render&logoColor=white)
+![Cloud Run](https://img.shields.io/badge/Cloud%20Run-%234285F4.svg?style=for-the-badge&logo=googlecloud&logoColor=white)
 
 ---
 
@@ -37,7 +37,7 @@ A powerful, interactive web application to browse, filter, and compare AMD AM5 m
 - **Data Ingestion**: Pandas, OpenPyXL
 - **Database**: SQLite (Committed for efficient production deployment)
 - **Frontend**: Vanilla JavaScript (ES6+), Bootstrap 5, Bootstrap Icons
-- **Deployment**: Production-ready with Gunicorn and Render support
+- **Deployment**: Gunicorn in Docker, on GCP Cloud Run (prod) and a self-hosted server (staging)
 
 ---
 
@@ -70,17 +70,34 @@ A powerful, interactive web application to browse, filter, and compare AMD AM5 m
 
 ---
 
-## 🌐 Deployment to Render
+## 🌐 Deployment
 
-This project is optimized for **Render's Free Tier**:
+Three environments, all running the same `Dockerfile` (Gunicorn on `$PORT`).
 
-1. Create a new **Web Service** on [Render](https://dashboard.render.com).
-2. Connect your GitHub repository.
-3. Render will automatically detect the:
-    - **Environment**: Python
-    - **Install Command**: `pip install -r requirements.txt`
-    - **Start Command**: `gunicorn app:app` (via `Procfile`)
-4. Set the `PORT` environment variable if needed (optional).
+| Env | URL | How it deploys |
+| --- | --- | --- |
+| **Prod** | https://app-xgnfoyjvrq-uc.a.run.app | GCP Cloud Run, service `app`, project `central-perk-259621`, region `us-central1`. Deployed **manually** (see below). |
+| **Staging** | https://am5mobo.feikowielsma.nl | Forgejo CI (`.forgejo/workflows/build.yml`) builds on push to the `staging` branch, pushes to the Forgejo registry; Watchtower pulls it. |
+| **Dev** | https://am5mobo-dev.feikowielsma.nl | Built on the home server from a local checkout. |
+
+### Deploying to prod
+
+```bash
+gcloud run deploy app \
+  --source . \
+  --project central-perk-259621 \
+  --region us-central1
+```
+
+The Docker build runs `scripts/init_db.py`, so the image's `mobo.db` is
+rebuilt from the committed spreadsheet rather than using the committed
+`.db` file. Staging additionally runs `scripts/fetch_sheet.py` first to
+pull the latest data straight from Google Sheets.
+
+> ⚠️ Motherboard IDs are derived from the spreadsheet **row position**
+> (`{sheet}_{rowindex}_{model}`), so any inserted row renumbers every board
+> below it and invalidates existing `/compare?ids=...` links. Keep this in
+> mind before refreshing the data.
 
 ---
 
