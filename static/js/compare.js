@@ -717,23 +717,15 @@ function analyzeTable() {
                 }
             }
 
-            // Try VRM parsing first for phase config fields
-            // Explicitly exclude "vcore" to let parseValue handle component scoring
-            const isVRMField = (fieldName.includes('phase') || fieldName.includes('vrm')) && !fieldName.includes('vcore');
-
             const parsedValues = values.map(v => {
                 // 1. Check for Server-Side Score (HTML attribute)
+                // VRM rows carry one, so phase configs are ranked by the
+                // server's phases-x-amps score rather than parsed here.
                 const serverScoreEl = v.cell.querySelector('[data-server-score]');
                 if (serverScoreEl) {
                     const score = parseFloat(serverScoreEl.getAttribute('data-score'));
                     // If score is 0, it might be non-numeric or just 0, but we treat as number for sorting
                     return { text: v.text, score: score, isNumeric: true };
-                }
-
-                // Try VRM parser first if it's a VRM-related field
-                if (isVRMField) {
-                    const vrmParsed = parseVRM(v.text);
-                    if (vrmParsed) return vrmParsed;
                 }
 
                 // Check for custom rank

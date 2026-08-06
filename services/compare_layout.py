@@ -36,13 +36,21 @@ def _value(label, path, td_class=DEFAULT_TD_CLASS):
     return {"kind": "value", "label": label, "path": path, "td_class": td_class}
 
 
-def _cell(label, path, comment=None, td_class=DEFAULT_TD_CLASS):
+def _cell(label, path, comment=None, td_class=DEFAULT_TD_CLASS, score_key=None):
+    """
+    `score_key` names a field in the board's precomputed `_scorecard`. When
+    set, the cell carries that value as data-score, and compare.js ranks the
+    row by it instead of parsing the displayed text. Use it wherever the
+    server already knows the real ranking -- text parsing in JS is a second,
+    divergent implementation waiting to happen.
+    """
     return {
         "kind": "cell",
         "label": label,
         "path": path,
         "comment": comment,
         "td_class": td_class,
+        "score_key": score_key,
     }
 
 
@@ -126,8 +134,13 @@ COMPARE_LAYOUT = [
         "title": "Power",
         "children": [
             _sub("power-vrm", "VRM Configuration", [
+                # Ranked by the server's vrm_score (phases x amps), the same
+                # figure the Scorecard VRM row shows. Before this, JS parsed
+                # the phase string here and ranked by raw phase count, so the
+                # two rows disagreed on which board was better.
                 _cell("Phase Config", "power.vrm_configuration.phase_config",
-                      "power.vrm_configuration.phase_config_comment"),
+                      "power.vrm_configuration.phase_config_comment",
+                      score_key="vrm_score"),
                 _cell("VRM (VCore)", "power.vrm_configuration.vrm_vcore",
                       "power.vrm_configuration.vrm_vcore_comment",
                       td_class="text-center small"),

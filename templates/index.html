@@ -235,6 +235,12 @@
 <script>
     // Pass full data to JS
     const MOBO_DATA = {{ mobos | tojson | safe }};
+
+    // USB badge appearance, shared with the compare table's Jinja so the two
+    // can't drift. Defined in services/spec_display.py.
+    const USB_SPEED_BADGES = {{ usb_speed_badges | tojson | safe }};
+    const USB_TYPE_A_KEYS = {{ usb_type_a_keys | tojson | safe }};
+    const USB_TYPE_C_KEYS = {{ usb_type_c_keys | tojson | safe }};
 </script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% endblock %}

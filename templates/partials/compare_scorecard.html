@@ -104,21 +104,8 @@
             {% set val = m.dot.internal_headers_features.usbthunderbolt.usbc_header %}
             {% if val and '*' in val %}
             {% set parts = val.split('*') %}
-            {% set speed = parts[1]|lower|replace('g','')|trim %}
-            {% set sp_class = 'bg-secondary' %}
-            {% set sp_title = 'USB' %}
-
-            {% if '20' in speed %}
-            {% set sp_class = 'bg-success' %}
-            {% set sp_title = 'USB 3.2 Gen 2x2 (20Gbps)' %}
-            {% elif '10' in speed %}
-            {% set sp_class = 'bg-primary' %}
-            {% set sp_title = 'USB 3.2 Gen 2 (10Gbps)' %}
-            {% elif '5' in speed %}
-            {% set sp_class = 'bg-info text-dark' %}
-            {% set sp_title = 'USB 3.2 Gen 1 (5Gbps)' %}
-            {% endif %}
-            {{ parts[0] }}x <span class="badge {{ sp_class }}" title="{{ sp_title }}">{{ parts[1]|upper
+            {% set badge = usb_badge_by_speed(parts[1]) %}
+            {{ parts[0] }}x <span class="badge {{ badge['class'] }}" title="{{ badge['title'] }}">{{ parts[1]|upper
                 }}</span>
             {% else %}
             {{ val or '-' }}
@@ -141,38 +128,26 @@
         </div>
 
         <div class="d-flex flex-column gap-1 align-items-center">
-            {# Type A Row #}
-            {% if usb.type_a['2.0'] or usb.type_a['3.2_5g'] or usb.type_a['3.2_10g'] %}
+            {# Type A / Type C rows. Badge colours, labels and tooltips come from
+               USB_SPEED_BADGES in services/spec_display.py, shared with main.js. #}
+            {% for group_label, counts, badge_keys in [
+            ('A:', usb.type_a, usb_type_a_keys),
+            ('C:', usb.type_c, usb_type_c_keys)
+            ] %}
+            {% set shown = [] %}
+            {% for badge in usb_badges_for(badge_keys) %}
+            {% if counts[badge['key']] %}{% set _ = shown.append(badge) %}{% endif %}
+            {% endfor %}
+            {% if shown %}
             <div class="d-flex align-items-center">
-                <span class="me-2 text-muted fw-bold" style="width: 20px; text-align: right;">A:</span>
+                <span class="me-2 text-muted fw-bold" style="width: 20px; text-align: right;">{{ group_label }}</span>
                 <div class="d-flex gap-2">
-                    {% if usb.type_a['3.2_10g'] %}{{ usb.type_a['3.2_10g'] }}x <span class="badge bg-primary"
-                        title="USB 3.2 Gen 2 (10Gbps)">10G</span>{% endif %}
-                    {% if usb.type_a['3.2_5g'] %}{{ usb.type_a['3.2_5g'] }}x <span
-                        class="badge bg-info text-dark" title="USB 3.2 Gen 1 (5Gbps)">5G</span>{% endif %}
-                    {% if usb.type_a['2.0'] %}{{ usb.type_a['2.0'] }}x <span class="badge bg-secondary"
-                        title="USB 2.0 (480Mbps)">2.0</span>{% endif %}
+                    {% for badge in shown %}{{ counts[badge['key']] }}x <span class="badge {{ badge['class'] }}"
+                        title="{{ badge['title'] }}">{{ badge['label'] }}</span>{% endfor %}
                 </div>
             </div>
             {% endif %}
-
-            {# Type C Row #}
-            {% if usb.type_c['3.2_5g'] or usb.type_c['3.2_10g'] or usb.type_c['3.2_20g'] or
-            usb.type_c['usb4_40g'] %}
-            <div class="d-flex align-items-center">
-                <span class="me-2 text-muted fw-bold" style="width: 20px; text-align: right;">C:</span>
-                <div class="d-flex gap-2">
-                    {% if usb.type_c['usb4_40g'] %}{{ usb.type_c['usb4_40g'] }}x <span
-                        class="badge bg-warning text-dark" title="USB4 (40Gbps)">40G</span>{% endif %}
-                    {% if usb.type_c['3.2_20g'] %}{{ usb.type_c['3.2_20g'] }}x <span class="badge bg-success"
-                        title="USB 3.2 Gen 2x2 (20Gbps)">20G</span>{% endif %}
-                    {% if usb.type_c['3.2_10g'] %}{{ usb.type_c['3.2_10g'] }}x <span class="badge bg-primary"
-                        title="USB 3.2 Gen 2 (10Gbps)">10G</span>{% endif %}
-                    {% if usb.type_c['3.2_5g'] %}{{ usb.type_c['3.2_5g'] }}x <span
-                        class="badge bg-info text-dark" title="USB 3.2 Gen 1 (5Gbps)">5G</span>{% endif %}
-                </div>
-            </div>
-            {% endif %}
+            {% endfor %}
         </div>
     </td>
     {% endfor %}

@@ -905,24 +905,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 usbBadgeCont.innerHTML = '';
                 const usb = sc.usb_details || {};
 
-                const addBadge = (count, label, color) => {
+                // Colours, labels, tooltips and order all come from
+                // USB_SPEED_BADGES (services/spec_display.py), shared with the
+                // compare table. The "(C)" suffix is added here because this
+                // modal lists both connector types in one row; the compare
+                // table splits them into labelled A:/C: rows and so has no
+                // need for it.
+                const badgeSpec = (key) =>
+                    (typeof USB_SPEED_BADGES !== 'undefined' ? USB_SPEED_BADGES : [])
+                        .find(b => b.key === key);
+
+                const addBadge = (count, key, suffix = '') => {
                     if (!count) return;
+                    const spec = badgeSpec(key);
+                    if (!spec) return;
                     const span = document.createElement('span');
-                    span.className = `badge ${color} text-white`;
-                    span.innerText = `${count}x ${label}`;
+                    span.className = `badge ${spec.class}`;
+                    span.title = spec.title;
+                    span.innerText = `${count}x ${spec.label}${suffix}`;
                     usbBadgeCont.appendChild(span);
                 };
 
                 const ta = usb.type_a || {};
-                addBadge(ta['2.0'], 'USB 2.0', 'bg-secondary');
-                addBadge(ta['3.2_5g'], '5G', 'bg-info');
-                addBadge(ta['3.2_10g'], '10G', 'bg-primary');
+                USB_TYPE_A_KEYS.forEach(key => addBadge(ta[key], key));
 
                 const tc = usb.type_c || {};
-                addBadge(tc['3.2_5g'], '5G (C)', 'bg-info');
-                addBadge(tc['3.2_10g'], '10G (C)', 'bg-primary');
-                addBadge(tc['3.2_20g'], '20G (C)', 'bg-success');
-                addBadge(tc['usb4_40g'], '40G (USB4)', 'bg-warning text-dark');
+                USB_TYPE_C_KEYS.forEach(key => addBadge(tc[key], key, ' (C)'));
             }
 
             if (bsModal) bsModal.show();

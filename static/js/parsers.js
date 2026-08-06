@@ -78,48 +78,11 @@ function getCustomRank(fieldName, value) {
     return null;
 }
 
-/**
- * Parse VRM configuration strings like "2x10+2+2" into total phase count
- */
-function parseVRM(text) {
-    if (!text || text === '-' || text === '') return null;
-
-    // Pattern: "2x10+2+2" or "16+2+1" or just "16"
-    const vrmPattern = /^(\d+)x(\d+)([+\d]+)?$/;
-    const simplePattern = /^(\d+)([+\d]+)?$/;
-
-    let match = text.match(vrmPattern);
-    if (match) {
-        const [, multiplier, base, additional] = match;
-        let total = parseInt(multiplier) * parseInt(base);
-
-        if (additional) {
-            const extras = additional.match(/\d+/g);
-            if (extras) {
-                total += extras.reduce((sum, n) => sum + parseInt(n), 0);
-            }
-        }
-
-        return { text, score: total, isNumeric: true, isVRM: true };
-    }
-
-    match = text.match(simplePattern);
-    if (match) {
-        const [, base, additional] = match;
-        let total = parseInt(base);
-
-        if (additional) {
-            const extras = additional.match(/\d+/g);
-            if (extras) {
-                total += extras.reduce((sum, n) => sum + parseInt(n), 0);
-            }
-        }
-
-        return { text, score: total, isNumeric: true, isVRM: true };
-    }
-
-    return null;
-}
+// VRM phase parsing used to live here, scoring a config by raw phase count
+// while the server scored the same data as phases x amps. The two disagreed
+// on ~6% of board pairs. VRM rows now carry the server's score as
+// data-score, so there is one ranking, computed once, in
+// loaders/data_transformer.calculate_vrm_score.
 
 /**
  * Parse a value and extract numeric info for comparison

@@ -16,7 +16,8 @@
     {{ custom_cells(row.name, mobos) }}
     {%- elif row.kind == 'cell' -%}
     {% for m in mobos %} <td class="{{ row.td_class }}">{{ cell(resolve_spec(m.dot, row.path),
-        resolve_spec(m.dot, row.comment) if row.comment else '') }}</td> {% endfor %}
+        resolve_spec(m.dot, row.comment) if row.comment else '',
+        score=m.specs.get('_scorecard', {}).get(row.score_key) if row.score_key else None) }}</td> {% endfor %}
     {%- else -%}
     {% for m in mobos %} <td class="{{ row.td_class }}">{{ resolve_spec(m.dot, row.path) }}</td> {% endfor %}
     {%- endif -%}

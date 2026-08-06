@@ -2,6 +2,13 @@ from flask import Flask, render_template, request, jsonify, g
 from models import get_engine, get_session_factory
 from services import MoboService
 from services.compare_layout import COMPARE_LAYOUT, resolve_spec
+from services.spec_display import (
+    USB_SPEED_BADGES,
+    USB_TYPE_A_KEYS,
+    USB_TYPE_C_KEYS,
+    usb_badges_for,
+    usb_badge_by_speed,
+)
 
 app = Flask(__name__)
 
@@ -39,7 +46,14 @@ def index():
     # Filter out standard columns from dropdown
     structure = service.filter_structure_drop_standard(structure)
     
-    return render_template('index.html', mobos=mobos, structure=structure)
+    return render_template(
+        'index.html',
+        mobos=mobos,
+        structure=structure,
+        usb_speed_badges=USB_SPEED_BADGES,
+        usb_type_a_keys=USB_TYPE_A_KEYS,
+        usb_type_c_keys=USB_TYPE_C_KEYS,
+    )
 
 
 
@@ -65,6 +79,10 @@ def compare():
         lan_lookup=lan_lookup,
         layout=COMPARE_LAYOUT,
         resolve_spec=resolve_spec,
+        usb_badges_for=usb_badges_for,
+        usb_badge_by_speed=usb_badge_by_speed,
+        usb_type_a_keys=USB_TYPE_A_KEYS,
+        usb_type_c_keys=USB_TYPE_C_KEYS,
     )
 
 @app.route('/api/mobos')
