@@ -108,10 +108,15 @@ rebuilt from the committed spreadsheet rather than using the committed
 `.db` file. Staging additionally runs `scripts/fetch_sheet.py` first to
 pull the latest data straight from Google Sheets.
 
-> ⚠️ Motherboard IDs are derived from the spreadsheet **row position**
-> (`{sheet}_{rowindex}_{model}`), so any inserted row renumbers every board
-> below it and invalidates existing `/compare?ids=...` links. Keep this in
-> mind before refreshing the data.
+Motherboard IDs are derived from the board's **brand and model**
+(`loaders/ids.py`), so refreshing the spreadsheet no longer disturbs them and
+`/compare?ids=...` links keep working. They were previously
+`{sheet}_{rowindex}_{model}`, which renumbered every board below an inserted
+row.
+
+> ⚠️ Links shared **before August 2026** use the old positional IDs and will
+> not resolve. There is no mapping back — the old IDs depended on a row order
+> that isn't recorded anywhere.
 
 ---
 

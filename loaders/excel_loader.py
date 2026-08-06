@@ -17,6 +17,7 @@ import warnings
 import re
 
 from .config import EXCEL_FILE, SHEETS_TO_LOAD, SKIP_HEADER_PATTERNS
+from .ids import make_mobo_id, assert_unique_ids
 from .header_parser import (
     find_leaf_header_row,
     determine_header_range,
@@ -195,9 +196,21 @@ def load_data():
                     record['_row_idx'] = row_idx
                     records.append(record)
             
+            # Ids are computed once here and reused by both the image
+            # extractor and the record loop below. Deriving them twice is how
+            # the two previously drifted: the image filename stripped invalid
+            # characters that the record id kept, so a board whose model
+            # contained one would look for an image that was never written.
+            record_ids = [
+                make_mobo_id(r.get('Brand'), r.get('Model')) for r in records
+            ]
+
             # Step 5a: Extract Images
             # Map images to records based on row index and known 'Rear I/O Image' column
-            process_sheet_images(ws, records, valid_cols, sheet_name)
+            ids_by_row = {
+                r['_row_idx']: rid for r, rid in zip(records, record_ids)
+            }
+            process_sheet_images(ws, records, valid_cols, sheet_name, ids_by_row)
 
             
             # Step 6: Process each motherboard record
@@ -224,9 +237,8 @@ def load_data():
                              form_factor = v
                              break
                 
-                # Generate unique ID
-                safe_model = model.replace(' ', '_').replace('/', '-').replace('\\', '-')
-                unique_id = f"{sheet_name}_{idx}_{safe_model}"
+                # Content-based id, computed once above -- see loaders/ids.py
+                unique_id = record_ids[idx]
                 
                 # Unflatten into hierarchical structure
                 nested_specs = unflatten_record(clean_record)
@@ -288,6 +300,10 @@ def load_data():
         traceback.print_exc()
         return [], []
     
+    # Ids are the database key, the compare URL and the image filename, so a
+    # collision must stop the build rather than silently drop a board.
+    assert_unique_ids(all_mobos)
+
     print(f"\nTotal motherboards loaded: {len(all_mobos)}")
     return all_mobos, final_header_tree
 
@@ -362,7 +378,7 @@ def load_lan_lookup():
         return {}
 
 
-def process_sheet_images(worksheet, records, cols_info, sheet_name):
+def process_sheet_images(worksheet, records, cols_info, sheet_name, ids_by_row):
     """
     Extracts floating images from worksheet and maps them to records.
     Saves images to static/img/io/{id}_io.png
@@ -416,18 +432,9 @@ def process_sheet_images(worksheet, records, cols_info, sheet_name):
              # Find record
              if row in row_map:
                  record = row_map[row]
-                 # Generate ID (mimic logic in load_data loop)
-                 model = record.get('Model', 'Unknown')
-                 # Sanitize filename (remove invalid chars for Windows)
-                 safe_model = str(model).strip()
-                 # Replace common separators
-                 safe_model = safe_model.replace(' ', '_').replace('/', '-').replace('\\', '-')
-                 # Remove invalid chars: < > : " / \ | ? * and control chars
-                 import re
-                 safe_model = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', safe_model)
-                 
-                 unique_id = f"{sheet_name}_{records.index(record)}_{safe_model}"
-                 
+                 # Same id the record gets -- computed once by the caller.
+                 unique_id = ids_by_row[row]
+
                  filename = f"{unique_id}_io.png"
                  filepath = os.path.join(output_dir, filename)
                  
