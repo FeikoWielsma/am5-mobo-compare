@@ -43,33 +43,15 @@ document.addEventListener('DOMContentLoaded', function () {
             direction: 'asc' // 'asc' or 'desc'
         };
 
-        // URL State Sync
+        // URL State Sync. State shaping and encoding live in table_logic.js;
+        // this only moves it in and out of the address bar.
         function saveStateToUrl() {
-            const state = {};
-
-            // Only include non-empty filters with short keys
-            const filters = {};
-            for (const key in currentFilters) {
-                if (currentFilters[key] instanceof Set && currentFilters[key].size > 0) {
-                    filters[key] = Array.from(currentFilters[key]);
-                }
-            }
-            if (Object.keys(filters).length > 0) state.f = filters;
-
-            // Only include dynamic keys that are set
-            const keys = {};
-            for (const i in dynamicFeatureKeys) {
-                if (dynamicFeatureKeys[i]) keys[i] = dynamicFeatureKeys[i];
-            }
-            if (Object.keys(keys).length > 0) state.k = keys;
-
-            // Only include search if non-empty
-            if (globalSearch.value) state.s = globalSearch.value;
-
-            // Only include sort if set
-            if (currentSort.column) {
-                state.o = { c: currentSort.column, d: currentSort.direction };
-            }
+            const state = buildViewState({
+                filters: currentFilters,
+                dynamicKeys: dynamicFeatureKeys,
+                search: globalSearch.value,
+                sort: currentSort
+            });
 
             // Skip encoding if state is empty
             if (JSON.stringify(state).length === 2) {
@@ -80,9 +62,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             try {
-                const encoded = btoa(JSON.stringify(state)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
                 const url = new URL(window.location);
-                url.searchParams.set('v', encoded);
+                url.searchParams.set('v', encodeViewState(state));
                 window.history.replaceState({}, '', url);
             } catch (e) { console.error("Failed to save state:", e); }
         }
@@ -96,9 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dynamicFeatureKeys = { ...DEFAULT_DYNAMIC_COLS };
             } else {
                 try {
-                    let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
-                    while (base64.length % 4) base64 += '=';
-                    const state = JSON.parse(atob(base64));
+                    const state = decodeViewState(encoded);
 
                     if (state.s) globalSearch.value = state.s;
                     if (state.k && Object.keys(state.k).length > 0) {
@@ -127,111 +106,17 @@ document.addEventListener('DOMContentLoaded', function () {
             rebuildDynamicColumnsUI();
         }
 
-        // Helper: Access nested property
-        function getNestedValue(obj, path) {
-            if (!path) return '-';
-
-            // 1. Try direct or dot notation on root
-            // 2. Try pipe notation on root
-            // 3. Try pipe notation inside 'specs' (most common for dynamic cols)
-
-            const tryAccess = (target, p) => {
-                if (!target) return undefined;
-                if (p in target) return target[p];
-
-                const sep = p.includes('|') ? '|' : '.';
-                const parts = p.split(sep);
-                let current = target;
-                for (const part of parts) {
-                    if (current && typeof current === 'object' && part in current) {
-                        current = current[part];
-                    } else {
-                        return undefined;
-                    }
-                }
-                return current;
-            };
-
-            let val = tryAccess(obj, path);
-            if (val !== undefined) return val;
-
-            // Try inside specs
-            if (obj.specs) {
-                val = tryAccess(obj.specs, path);
-                if (val !== undefined) return val;
-            }
-
-            return '-';
-        }
-
-        function getChipsetClass(c) {
-            if (!c) return '';
-            const clean = c.toLowerCase().replace(/[ ()]/g, '');
-            return `badge-chipset badge-chipset-${clean}`;
-        }
-
-        function getFFClass(f) {
-            if (!f) return '';
-            // Normalize form factor for CSS class
-            let normalized = f.toLowerCase();
-            // Handle special cases
-            normalized = normalized.replace(/atx-b$/i, 'atx'); // ATX-B -> atx
-            normalized = normalized.replace(/bkb itx/i, 'mini-itx'); // BKB ITX -> mini-itx
-            normalized = normalized.replace(/[μu]-atx-b/i, 'matx'); // μ-ATX-B -> matx
-            normalized = normalized.replace(/[μu]-atx/i, 'matx'); // μ-ATX -> matx
-            normalized = normalized.replace(/e-atx/i, 'eatx'); // E-ATX -> eatx
-            // Clean up remaining special chars
-            const clean = normalized.replace(/[ -]/g, '');
-            return `badge-ff badge-ff-${clean}`;
-        }
-
         function renderTable() {
-            const filtered = MOBO_DATA.filter(m => {
-                const g = globalSearch.value.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-                if (g.length > 0) {
-                    const combined = `${m.brand} ${m.chipset} ${m.model}`.toLowerCase();
-                    if (!g.every(word => combined.includes(word))) return false;
-                }
-
-                if (currentFilters.brand.size > 0 && !currentFilters.brand.has(String(m.brand))) return false;
-                if (currentFilters.chipset.size > 0 && !currentFilters.chipset.has(String(m.chipset))) return false;
-                if (currentFilters.model.size > 0 && !currentFilters.model.has(String(m.model))) return false;
-                if (currentFilters.form_factor.size > 0 && !currentFilters.form_factor.has(String(m.form_factor))) return false;
-
-                // Dynamic columns filtering
-                for (const k in dynamicFeatureKeys) {
-                    const colKey = `dyn${k}`;
-                    if (currentFilters[colKey] && currentFilters[colKey].size > 0) {
-                        const val = String(getNestedValue(m, dynamicFeatureKeys[k]));
-                        if (!currentFilters[colKey].has(val)) return false;
-                    }
-                }
-                return true;
-            });
-
-            // Apply sorting if a column is selected
-            if (currentSort.column) {
-                filtered.sort((a, b) => {
-                    let aVal, bVal;
-
-                    if (currentSort.column.startsWith('dyn')) {
-                        const idx = currentSort.column.replace('dyn', '');
-                        aVal = dynamicFeatureKeys[idx] ? getNestedValue(a, dynamicFeatureKeys[idx]) : '';
-                        bVal = dynamicFeatureKeys[idx] ? getNestedValue(b, dynamicFeatureKeys[idx]) : '';
-                    } else {
-                        aVal = a[currentSort.column];
-                        bVal = b[currentSort.column];
-                    }
-
-                    // Handle nulls and convert to strings for comparison
-                    aVal = (aVal === null || aVal === undefined || aVal === '-') ? '' : String(aVal);
-                    bVal = (bVal === null || bVal === undefined || bVal === '-') ? '' : String(bVal);
-
-                    // Natural sort for strings
-                    const result = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
-                    return currentSort.direction === 'asc' ? result : -result;
-                });
-            }
+            // Filtering and sorting live in table_logic.js.
+            const filtered = sortMobos(
+                filterMobos(MOBO_DATA, {
+                    search: globalSearch.value,
+                    filters: currentFilters,
+                    dynamicKeys: dynamicFeatureKeys
+                }),
+                currentSort,
+                dynamicFeatureKeys
+            );
 
             tableBody.innerHTML = '';
             filtered.forEach(m => {
@@ -249,8 +134,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <input type="checkbox" class="mobo-select form-check-input" value="${m.id}" ${selectedIds.has(String(m.id)) ? 'checked' : ''}>
                 </td>
                 <td>${m.brand}</td>
-                <td><span class="badge ${getChipsetClass(m.chipset)}">${m.chipset}</span></td>
-                <td><span class="badge ${getFFClass(m.form_factor)}">${m.form_factor}</span></td>
+                <td><span class="badge ${chipsetBadgeClass(m.chipset)}">${m.chipset}</span></td>
+                <td><span class="badge ${formFactorBadgeClass(m.form_factor)}">${m.form_factor}</span></td>
                 <td>
                     <span class="fw-bold text-primary model-click" role="button" data-id="${m.id}">${m.model}</span>
                 </td>
@@ -434,41 +319,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             filterCols.forEach(targetCol => {
-                const subset = MOBO_DATA.filter(m => {
-                    const g = globalSearch.value.toLowerCase();
-                    if (g) {
-                        const combined = `${m.brand} ${m.chipset} ${m.model}`.toLowerCase();
-                        if (!combined.includes(g)) return false;
-                    }
-
-                    for (const col of filterCols) {
-                        if (col === targetCol) continue;
-                        const filterSet = currentFilters[col];
-                        if (filterSet.size === 0) continue;
-
-                        let val;
-                        if (col.startsWith('dyn')) {
-                            const idx = parseInt(col.substring(3));
-                            val = dynamicFeatureKeys[idx] ? String(getNestedValue(m, dynamicFeatureKeys[idx])) : null;
-                        } else {
-                            val = String(m[col]);
-                        }
-
-                        if (!filterSet.has(val)) return false;
-                    }
-                    return true;
-                });
-
-                const availableValues = new Set();
-                subset.forEach(m => {
-                    let val;
-                    if (targetCol.startsWith('dyn')) {
-                        const idx = parseInt(targetCol.substring(3));
-                        val = dynamicFeatureKeys[idx] ? String(getNestedValue(m, dynamicFeatureKeys[idx])) : null;
-                    } else {
-                        val = String(m[targetCol]);
-                    }
-                    if (val !== null && val !== undefined) availableValues.add(val);
+                const availableValues = availableValuesFor(MOBO_DATA, targetCol, {
+                    search: globalSearch.value,
+                    filters: currentFilters,
+                    dynamicKeys: dynamicFeatureKeys
                 });
 
                 const dropdown = document.querySelector(`.filter-dropdown[data-col="${targetCol}"]`);

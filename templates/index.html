@@ -242,5 +242,6 @@
     const USB_TYPE_A_KEYS = {{ usb_type_a_keys | tojson | safe }};
     const USB_TYPE_C_KEYS = {{ usb_type_c_keys | tojson | safe }};
 </script>
+<script src="{{ url_for('static', filename='js/table_logic.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% endblock %}
