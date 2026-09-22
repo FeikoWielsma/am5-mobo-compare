@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, g
+from flask_compress import Compress
 from models import get_engine, get_session_factory
 from services import MoboService
 from services.compare_layout import COMPARE_LAYOUT, resolve_spec
@@ -11,6 +12,8 @@ from services.spec_display import (
 )
 
 app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000
+Compress(app)
 
 # Initialize DB connection factory
 engine = get_engine()

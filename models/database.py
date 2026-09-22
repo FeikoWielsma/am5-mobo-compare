@@ -99,8 +99,13 @@ class Motherboard(Base):
     specs = Column(JSON)
     
     @property
+    def typed(self):
+        """Returns the canonical typed specifications dictionary."""
+        return (self.specs or {}).get('_typed', {})
+
+    @property
     def dot(self):
-        """Returns a DotWrapper around specs for easy template access."""
+        """Returns a DotWrapper around specs for easy template access (legacy/transition)."""
         return DotWrapper(self.specs if self.specs else {})
 
     def to_dict(self):

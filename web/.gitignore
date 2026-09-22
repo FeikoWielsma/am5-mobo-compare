@@ -1,0 +1,11 @@
+node_modules/
+.svelte-kit/
+build/
+.env
+.env.*
+!*.env.example
+
+# Ingested data & extracted images synced by build_data.py
+static/data/
+static/img/
+static/static/

@@ -1,24 +1,24 @@
-# Use a lightweight Python base image
-FROM python:3.11-slim
+# Stage 1: Build static web app
+FROM node:22-alpine AS builder
+WORKDIR /app/web
 
-# Set the working directory inside the container
-WORKDIR /app
+# Install pnpm matching lockfile format
+RUN npm install -g pnpm@10
 
-# Copy the dependency file first (for better caching)
-COPY requirements.txt .
+# Copy package files and install dependencies
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy source code and build static assets
+COPY web/ ./
+RUN pnpm run build
 
-# Copy the rest of your app code (including the .db file!)
-COPY . .
+# Stage 2: Serve with Caddy
+FROM caddy:2-alpine
+COPY --from=builder /app/web/build /usr/share/caddy
+COPY Caddyfile /etc/caddy/Caddyfile
 
-RUN python scripts/init_db.py
-
-# Cloud Run injects a PORT environment variable.
-# We need to tell the container to listen on that port.
 ENV PORT=8080
+EXPOSE 8080
 
-# The command to run your app using Gunicorn (a production server)
-# "app:app" means "look in app.py for the 'app' object"
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

@@ -100,6 +100,10 @@ def load_data():
                 if not any(skip.lower() in col['key'].lower() for skip in SKIP_HEADER_PATTERNS)
             ]
             
+            # Validation Gate: Ensure headers conform to Column Registry
+            from .validator import validate_sheet_headers, parse_and_validate_record
+            validate_sheet_headers(sheet_name, valid_cols)
+            
             # Step 4: Build header tree (once, from first sheet)
             if not structure_built:
                 final_header_tree = build_header_tree(valid_cols)
@@ -240,8 +244,13 @@ def load_data():
                 # Content-based id, computed once above -- see loaders/ids.py
                 unique_id = record_ids[idx]
                 
+                # Validation Gate: Parse and validate typed specifications
+                typed_record = parse_and_validate_record(clean_record, sheet_name, record['_row_idx'])
+                typed_record['id'] = unique_id
+
                 # Unflatten into hierarchical structure
                 nested_specs = unflatten_record(clean_record)
+                nested_specs['_typed'] = typed_record
                 
                 # Calculate and inject LAN Score (server-side)
                 # Find "LAN Controller" value. Path: Networking -> LAN Controller
@@ -287,7 +296,8 @@ def load_data():
                     'model': model,
                     'chipset': chipset,
                     'form_factor': form_factor,
-                    'specs': nested_specs
+                    'specs': nested_specs,
+                    'typed': typed_record,
                 }
                 
                 all_mobos.append(mobo_record)
@@ -455,13 +465,27 @@ def process_sheet_images(worksheet, records, cols_info, sheet_name, ids_by_row):
                          pass
                      
                      if pil_img:
-                         # Convert to RGB if needed (e.g. if RGBA/P) - PNG supports RGBA though
-                         pil_img.save(filepath, "PNG")
-                         
-                         # Update record with relative web path
-                         # Use forward slashes for URL
-                         web_path = f"/static/img/io/{filename}"
-                         record[io_key] = web_path
+                        # Convert to RGB if needed (e.g. if RGBA/P) - PNG supports RGBA though
+                        pil_img.save(filepath, "PNG")
+                        
+                        # Generate WebP thumbnail (~200px max, preserving aspect ratio)
+                        thumb_filename = f"{unique_id}_io_thumb.webp"
+                        thumb_filepath = os.path.join(output_dir, thumb_filename)
+                        try:
+                            thumb_img = pil_img.copy()
+                            thumb_img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                            if thumb_img.mode not in ("RGB", "RGBA"):
+                                thumb_img = thumb_img.convert("RGBA")
+                            thumb_img.save(thumb_filepath, "WEBP", quality=85)
+                            web_path_thumb = f"/static/img/io/{thumb_filename}"
+                            record[f"{io_key} Thumb"] = web_path_thumb
+                        except Exception as thumb_err:
+                            print(f"    Failed to save thumbnail for row {row}: {thumb_err}")
+
+                        # Update record with relative web path
+                        # Use forward slashes for URL
+                        web_path = f"/static/img/io/{filename}"
+                        record[io_key] = web_path
                  except Exception as e:
                      print(f"    Failed to save image for row {row}: {e}")
 

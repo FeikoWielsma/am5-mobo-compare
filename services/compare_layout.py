@@ -253,10 +253,12 @@ COMPARE_LAYOUT = [
         "children": [
             _sub("expansion-pcie", "PCIe Slots", [
                 _custom("pcie_x16_electrical", "x16 Electrical"),
+                _custom("pcie_bifurcation", "PCIe Bifurcation"),
                 _custom("pcie_x16_total", "x16 Total"),
                 _custom("pcie_x1x4_electrical", "x1/x4 Electrical"),
                 _value("x1/x4 Total", "expansion.pcie_slots.physical_x1x4.total"),
                 _custom("pcie_total_slots", "Total Slots"),
+                _custom("pcie_slot_layout", "Slot Layout (Slots 1–7)"),
             ]),
             _sub("expansion-storage", "Storage", [
                 _value("SATA", "expansion.storage.sata"),

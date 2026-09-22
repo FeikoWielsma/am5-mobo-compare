@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__
+*.xlsx
+mobo.db
+node_modules
+web/node_modules
+web/.svelte-kit
+web/build
+scratch
+tests
+.pytest_cache
