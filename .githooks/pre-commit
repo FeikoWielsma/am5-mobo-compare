@@ -1,0 +1,58 @@
+#!/bin/sh
+''''true
+# ==============================================================================
+# Git Pre-Commit Hook (POSIX sh/bash & Python polyglot)
+# ==============================================================================
+set -e
+
+echo "==> Running pre-commit validation gates..."
+
+echo "==> [1/3] Running Python test suite (uv run pytest -q)..."
+uv run pytest -q || {
+    echo "ERROR: Python pytest suite failed!" >&2
+    exit 1
+}
+
+echo "==> [2/3] Running SvelteKit type checks (pnpm --prefix web check)..."
+pnpm --prefix web check || {
+    echo "ERROR: Frontend svelte-check failed!" >&2
+    exit 1
+}
+
+echo "==> [3/3] Running Web test suite (pnpm --prefix web test)..."
+pnpm --prefix web test || {
+    echo "ERROR: Frontend vitest suite failed!" >&2
+    exit 1
+}
+
+echo "==> All pre-commit checks passed successfully!"
+exit 0
+'''
+# ==============================================================================
+# Python Execution Path (when invoked as python .githooks/pre-commit)
+# ==============================================================================
+import subprocess
+import sys
+
+def main():
+    print("==> Running pre-commit validation gates via Python...")
+    is_win = (sys.platform == "win32")
+
+    tasks = [
+        ("Python test suite", ["uv", "run", "pytest", "-q"]),
+        ("SvelteKit type checks", ["pnpm", "--prefix", "web", "check"]),
+        ("Web test suite", ["pnpm", "--prefix", "web", "test"]),
+    ]
+
+    for idx, (name, cmd) in enumerate(tasks, 1):
+        print(f"==> [{idx}/3] Running {name} ({' '.join(cmd)})...")
+        res = subprocess.run(cmd, shell=is_win)
+        if res.returncode != 0:
+            print(f"ERROR: {name} failed with exit code {res.returncode}!", file=sys.stderr)
+            sys.exit(res.returncode)
+
+    print("==> All pre-commit checks passed successfully!")
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()

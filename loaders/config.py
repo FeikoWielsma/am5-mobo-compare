@@ -33,3 +33,9 @@ IDENTITY_COLUMNS = ['Brand', 'Model', 'Chipset']
 IO_IMAGE_DIR = os.environ.get(
     "MOBO_IO_IMAGE_DIR", os.path.join("static", "img", "io")
 )
+
+# Filesystem directory that motherboard PCB images are located in.
+# Overridable via MOBO_BOARD_IMAGE_DIR.
+BOARD_IMAGE_DIR = os.environ.get(
+    "MOBO_BOARD_IMAGE_DIR", os.path.join("static", "img", "boards")
+)

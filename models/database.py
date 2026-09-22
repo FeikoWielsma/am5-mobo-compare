@@ -101,7 +101,9 @@ class Motherboard(Base):
     @property
     def typed(self):
         """Returns the canonical typed specifications dictionary."""
-        return (self.specs or {}).get('_typed', {})
+        from models.typed import DotDict
+        raw = (self.specs or {}).get('_typed', {})
+        return DotDict(raw) if isinstance(raw, dict) else raw
 
     @property
     def dot(self):

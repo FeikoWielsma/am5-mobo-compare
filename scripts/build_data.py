@@ -52,6 +52,18 @@ def sync_to_web_static(data_dir: str, web_static_dir: str = "web/static") -> Non
                     if not os.path.exists(dst) or os.path.getmtime(src) > os.path.getmtime(dst):
                         shutil.copy2(src, dst)
 
+    from loaders.config import BOARD_IMAGE_DIR
+    if os.path.exists(BOARD_IMAGE_DIR):
+        for sub in [("img", "boards"), ("static", "img", "boards")]:
+            target_img_dir = os.path.join(web_static_dir, *sub)
+            os.makedirs(target_img_dir, exist_ok=True)
+            for img_name in os.listdir(BOARD_IMAGE_DIR):
+                if img_name.endswith(".webp") or img_name.endswith(".png"):
+                    src = os.path.join(BOARD_IMAGE_DIR, img_name)
+                    dst = os.path.join(target_img_dir, img_name)
+                    if not os.path.exists(dst) or os.path.getmtime(src) > os.path.getmtime(dst):
+                        shutil.copy2(src, dst)
+
     icons_src = os.path.join("static", "img", "icons")
     if os.path.exists(icons_src):
         target_icons_dir = os.path.join(web_static_dir, "img", "icons")
@@ -153,6 +165,10 @@ def build_data(output_dir: str = "data", excel_path: str = EXCEL_FILE) -> tuple[
 
     with open(ui_meta_path, "w", encoding="utf-8") as f:
         json.dump(ui_metadata, f, indent=2)
+
+    # 4b. Generate frontend build metadata
+    from loaders.build_meta import write_build_meta
+    write_build_meta(total_boards=len(motherboards))
 
     # 5. Sync to web/static if web exists
     sync_to_web_static(output_dir)

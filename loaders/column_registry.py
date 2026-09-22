@@ -169,6 +169,8 @@ REGISTRY_LIST: list[ColumnDef] = [
     # Links & Media
     _def("Links|Website", "website_url", "string", parse_string, description="Official manufacturer product webpage"),
     _def("Rear I/O Image", "rear_io_image", "string", parse_string, description="Rear I/O panel photograph", aliases=("Rear I/O|Rear I/O Image",)),
+    _def("Board Image", "board_image", "string", parse_string, description="Motherboard PCB photograph", aliases=("General|Board Image", "Motherboard|General|Board Image", "General|Physical|Board Image")),
+    _def("Board Image Thumb", "board_image_thumb", "string", parse_string, description="Motherboard PCB photograph thumbnail", aliases=("General|Board Image Thumb", "Motherboard|General|Board Image Thumb", "General|Physical|Board Image Thumb")),
 
     # Power & VRM
     _def("Power|Connectors|EPS12V config", "eps12v_config", "string", parse_string, description="8-pin / 4-pin CPU EPS power connectors"),

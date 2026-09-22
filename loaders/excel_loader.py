@@ -11,6 +11,7 @@ Functions:
     load_data: Main entry point for loading all motherboard data
 """
 
+import os
 import pandas as pd
 import openpyxl
 import warnings
@@ -251,6 +252,35 @@ def load_data():
                 # Unflatten into hierarchical structure
                 nested_specs = unflatten_record(clean_record)
                 nested_specs['_typed'] = typed_record
+
+                # Check for board image photo in static/img/boards/
+                from .config import BOARD_IMAGE_DIR
+                board_img_dir = os.environ.get("MOBO_BOARD_IMAGE_DIR", BOARD_IMAGE_DIR)
+                webp_board = f"{unique_id}_board.webp"
+                png_board = f"{unique_id}_board.png"
+                board_img_file = None
+                if os.path.exists(os.path.join(board_img_dir, webp_board)):
+                    board_img_file = webp_board
+                elif os.path.exists(os.path.join(board_img_dir, png_board)):
+                    board_img_file = png_board
+
+                if board_img_file:
+                    board_img_url = f"/static/img/boards/{board_img_file}"
+                    webp_thumb = f"{unique_id}_board_thumb.webp"
+                    png_thumb = f"{unique_id}_board_thumb.png"
+                    if os.path.exists(os.path.join(board_img_dir, webp_thumb)):
+                        board_thumb_url = f"/static/img/boards/{webp_thumb}"
+                    elif os.path.exists(os.path.join(board_img_dir, png_thumb)):
+                        board_thumb_url = f"/static/img/boards/{png_thumb}"
+                    else:
+                        board_thumb_url = board_img_url
+
+                    typed_record['board_image'] = board_img_url
+                    typed_record['board_image_thumb'] = board_thumb_url
+                    if 'General' not in nested_specs or not isinstance(nested_specs['General'], dict):
+                        nested_specs['General'] = {}
+                    nested_specs['General']['Board Image'] = board_img_url
+                    nested_specs['General']['Board Image Thumb'] = board_thumb_url
                 
                 # Calculate and inject LAN Score (server-side)
                 # Find "LAN Controller" value. Path: Networking -> LAN Controller
