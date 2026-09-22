@@ -6,6 +6,7 @@
   let { data } = $props();
   let board = $derived(data.board);
   let simulatorOpen = $state(false);
+  let selectedImg = $state<'board' | 'io'>('board');
 </script>
 
 {#if !board}
@@ -18,6 +19,8 @@
   {@const typed = board.typed || {}}
   {@const sc = board.specs?._scorecard || {}}
   {@const isSelected = $compareStore.includes(board.id)}
+  {@const boardImg = typed.board_image || board.specs?.General?.['Board Image']}
+  {@const ioImg = typed.rear_io_image || board.specs?.['Rear I/O']?.['Rear I/O Image']}
 
   <div class="container py-4">
     <!-- Breadcrumb & Back -->
@@ -85,21 +88,43 @@
           </div>
         </div>
 
-        {#if typed.rear_io_image || board.specs?.['Rear I/O']?.['Rear I/O Image']}
-          {@const fullImg = typed.rear_io_image || board.specs?.['Rear I/O']?.['Rear I/O Image']}
-          {#if fullImg && (fullImg.startsWith('/') || fullImg.startsWith('http'))}
-            <div class="col-12 col-md-4 text-center mt-3 mt-md-0">
-              <div class="p-2 border border-secondary rounded bg-black">
-                <span class="text-secondary small d-block mb-1">Rear I/O Panel</span>
+        {#if boardImg || ioImg}
+          <div class="col-12 col-md-5 text-center mt-3 mt-md-0">
+            <div class="p-2 border border-secondary rounded bg-black">
+              {#if boardImg && ioImg}
+                <div class="d-flex justify-content-center gap-1 mb-2">
+                  <button
+                    type="button"
+                    class="btn btn-xs {selectedImg === 'board' ? 'btn-primary' : 'btn-outline-secondary text-light'}"
+                    onclick={() => (selectedImg = 'board')}
+                  >
+                    Motherboard PCB
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-xs {selectedImg === 'io' ? 'btn-primary' : 'btn-outline-secondary text-light'}"
+                    onclick={() => (selectedImg = 'io')}
+                  >
+                    Rear I/O Panel
+                  </button>
+                </div>
                 <img
-                  src={fullImg}
-                  alt="Rear I/O Panel"
+                  src={selectedImg === 'board' ? boardImg : ioImg}
+                  alt={selectedImg === 'board' ? `${board.brand} ${board.model} PCB` : 'Rear I/O Panel'}
                   class="img-fluid rounded"
-                  style="max-height: 120px; object-fit: contain;"
+                  style="max-height: 200px; object-fit: contain;"
                 />
-              </div>
+              {:else}
+                <span class="text-secondary small d-block mb-1">{boardImg ? 'Motherboard PCB' : 'Rear I/O Panel'}</span>
+                <img
+                  src={boardImg || ioImg}
+                  alt="{board.brand} {board.model}"
+                  class="img-fluid rounded"
+                  style="max-height: 160px; object-fit: contain;"
+                />
+              {/if}
             </div>
-          {/if}
+          </div>
         {/if}
       </div>
     </div>

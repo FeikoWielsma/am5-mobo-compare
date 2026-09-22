@@ -224,5 +224,8 @@ __marimo__/
 # Do not commit them -- a binary DB, 8MB+ JSON, and ~600 PNGs churn on every data refresh.
 mobo.db
 /static/img/io/
+/static/img/boards/*.webp
+/static/img/boards/*.png
+!/static/img/boards/.gitkeep
 /data/
 scratch/

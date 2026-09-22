@@ -1,0 +1,227 @@
+{
+  "ASRock_X870E_Taichi": {
+    "status": "success",
+    "brand": "ASRock",
+    "model": "X870E Taichi",
+    "image_url": "https://www.asrock.com/mb/photo/X870E%20Taichi(L1).png",
+    "page_url": "https://www.asrock.com/mb/AMD/X870E%20Taichi/index.asp",
+    "file": "ASRock_X870E_Taichi_board.webp",
+    "thumb_file": "ASRock_X870E_Taichi_board_thumb.webp",
+    "width": 1200,
+    "height": 1000,
+    "size_bytes": 192760,
+    "timestamp": "2026-09-22T17:37:12.548194+00:00"
+  },
+  "ASUS_ROG_CROSSHAIR_X870E_HERO_BTF": {
+    "status": "success",
+    "brand": "ASUS",
+    "model": "ROG CROSSHAIR X870E HERO BTF",
+    "image_url": "https://dlcdnwebimgs.asus.com/gain/7494F846-CFB8-499F-A22C-EFD8FAA80AF3",
+    "page_url": "https://rog.asus.com/motherboards/rog-crosshair/rog-crosshair-x870e-hero-btf/spec/",
+    "file": "ASUS_ROG_CROSSHAIR_X870E_HERO_BTF_board.webp",
+    "thumb_file": "ASUS_ROG_CROSSHAIR_X870E_HERO_BTF_board_thumb.webp",
+    "width": 1200,
+    "height": 1200,
+    "size_bytes": 154610,
+    "timestamp": "2026-09-22T17:37:17.007093+00:00"
+  },
+  "Gigabyte_X870E_AORUS_MASTER": {
+    "status": "success",
+    "brand": "Gigabyte",
+    "model": "X870E AORUS MASTER",
+    "image_url": "https://static.gigabyte.com/StaticFile/Image/Global/6742038c90b90dbde85a56e33c573323/ProductRemoveBg/44015",
+    "page_url": "https://www.gigabyte.com/Motherboard/X870E-AORUS-MASTER/sp",
+    "file": "Gigabyte_X870E_AORUS_MASTER_board.webp",
+    "thumb_file": "Gigabyte_X870E_AORUS_MASTER_board_thumb.webp",
+    "width": 1200,
+    "height": 765,
+    "size_bytes": 141418,
+    "timestamp": "2026-09-22T17:37:24.053314+00:00"
+  },
+  "MSI_MPG_X870E_CARBON_MAX_WIFI": {
+    "status": "success",
+    "brand": "MSI",
+    "model": "MPG X870E CARBON MAX WIFI",
+    "image_url": "https://storage-asset.msi.com/global/picture/product/product_1768809134caad48bd76105a03432347e0273643ed.webp",
+    "page_url": "https://www.msi.com/Motherboard/MPG-X870E-CARBON-MAX-WIFI/Specification",
+    "file": "MSI_MPG_X870E_CARBON_MAX_WIFI_board.webp",
+    "thumb_file": "MSI_MPG_X870E_CARBON_MAX_WIFI_board_thumb.webp",
+    "width": 1000,
+    "height": 800,
+    "size_bytes": 86216,
+    "timestamp": "2026-09-22T17:37:27.688365+00:00"
+  },
+  "AFOX_B650D5-MA-V2": {
+    "status": "not_found",
+    "brand": "AFOX",
+    "model": "B650D5-MA-V2",
+    "page_url": "https://www.afox-corp.com/index.php?m=content&c=index&a=show&catid=137&id=694",
+    "timestamp": "2026-09-22T17:41:57.441985+00:00"
+  },
+  "ASRock_X870E_Taichi_OCF": {
+    "status": "success",
+    "brand": "ASRock",
+    "model": "X870E Taichi OCF",
+    "image_url": "https://www.asrock.com/mb/photo/X870E%20Taichi%20OCF(L1).png",
+    "page_url": "https://www.asrock.com/mb/AMD/X870E%20Taichi%20OCF/index.asp",
+    "file": "ASRock_X870E_Taichi_OCF_board.webp",
+    "thumb_file": "ASRock_X870E_Taichi_OCF_board_thumb.webp",
+    "width": 1200,
+    "height": 1000,
+    "size_bytes": 131132,
+    "timestamp": "2026-09-22T17:42:00.608350+00:00"
+  },
+  "ASUS_ROG_CROSSHAIR_X870E_GLACIAL": {
+    "status": "success",
+    "brand": "ASUS",
+    "model": "ROG CROSSHAIR X870E GLACIAL",
+    "image_url": "https://dlcdnwebimgs.asus.com/gain/EED05902-600D-4D1F-979B-CE73C4334101",
+    "page_url": "https://rog.asus.com/motherboards/rog-crosshair/rog-crosshair-x870e-glacial/spec/",
+    "file": "ASUS_ROG_CROSSHAIR_X870E_GLACIAL_board.webp",
+    "thumb_file": "ASUS_ROG_CROSSHAIR_X870E_GLACIAL_board_thumb.webp",
+    "width": 1200,
+    "height": 1200,
+    "size_bytes": 185294,
+    "timestamp": "2026-09-22T17:42:04.940217+00:00"
+  },
+  "Biostar_X870E_VALKYRIE": {
+    "status": "not_found",
+    "brand": "Biostar",
+    "model": "X870E VALKYRIE",
+    "page_url": "https://www.biostar.com.tw/app/en/mb/introduction.php?S_ID=1161",
+    "timestamp": "2026-09-22T17:42:05.305358+00:00"
+  },
+  "Colorful_iGame_X870E_VULCAN_OC_V14": {
+    "status": "not_found",
+    "brand": "Colorful",
+    "model": "iGame X870E VULCAN OC V14",
+    "page_url": "https://en.colorful.cn/en/home/product?mid=84&id=3a7e8da1-41a1-46f0-a1d7-e9d82edc3455",
+    "timestamp": "2026-09-22T17:42:07.034952+00:00"
+  },
+  "ECS_B650AM5-M": {
+    "status": "success",
+    "brand": "ECS",
+    "model": "B650AM5-M",
+    "image_url": "https://campaign.ecs.com.tw/images/products/large/B650AM5-M_445.png",
+    "page_url": "https://www.ecs.com.tw/en/Product/Motherboard/B650AM5-M/specification",
+    "file": "ECS_B650AM5-M_board.webp",
+    "thumb_file": "ECS_B650AM5-M_board_thumb.webp",
+    "width": 445,
+    "height": 310,
+    "size_bytes": 22848,
+    "timestamp": "2026-09-22T17:42:11.398836+00:00"
+  },
+  "Erying_Alkiad_B650_ITX_D5": {
+    "status": "not_found",
+    "brand": "Erying",
+    "model": "Alkiad B650 ITX D5",
+    "page_url": "https://www.erying.cc/sys-pd/132.html",
+    "timestamp": "2026-09-22T17:42:11.918465+00:00"
+  },
+  "Galax_UNION_B650M_Wi-Fi_Plus": {
+    "status": "not_found",
+    "brand": "Galax",
+    "model": "UNION B650M Wi-Fi Plus",
+    "page_url": "https://www.szgalaxy.com/goods/detail?id=764143192571514880",
+    "timestamp": "2026-09-22T17:42:13.080622+00:00"
+  },
+  "Gigabyte_X870E_AORUS_XTREME_X3D_AI_TOP": {
+    "status": "success",
+    "brand": "Gigabyte",
+    "model": "X870E AORUS XTREME X3D AI TOP",
+    "image_url": "https://static.gigabyte.com/StaticFile/Image/Global/e9149e2bd4d3b3e5aab07e7c668f07b3/ProductRemoveBg/47055",
+    "page_url": "https://www.gigabyte.com/Motherboard/X870E-AORUS-XTREME-X3D-AI-TOP/sp",
+    "file": "Gigabyte_X870E_AORUS_XTREME_X3D_AI_TOP_board.webp",
+    "thumb_file": "Gigabyte_X870E_AORUS_XTREME_X3D_AI_TOP_board_thumb.webp",
+    "width": 1200,
+    "height": 660,
+    "size_bytes": 79496,
+    "timestamp": "2026-09-22T17:42:17.416055+00:00"
+  },
+  "HUANANZHI_B650M-B_PRO": {
+    "status": "not_found",
+    "brand": "HUANANZHI",
+    "model": "B650M-B PRO",
+    "page_url": "http://www.huananzhi.com/en/more.php?lm=10&id=862",
+    "timestamp": "2026-09-22T17:42:18.723623+00:00"
+  },
+  "ITZR_B650DA1-V11": {
+    "status": "not_found",
+    "brand": "ITZR",
+    "model": "B650DA1-V11",
+    "page_url": "https://www.itzr.com.cn/product/detail/82.html",
+    "timestamp": "2026-09-22T17:42:22.569258+00:00"
+  },
+  "Jginyue_B850M_SNOW_DREAM_WIFI": {
+    "status": "not_found",
+    "brand": "Jginyue",
+    "model": "B850M SNOW DREAM WIFI",
+    "page_url": "https://jginyue.com.cn/index/Article/show/cat_id/25/id/245",
+    "timestamp": "2026-09-22T17:42:25.359755+00:00"
+  },
+  "MSI_MEG_X870E_GODLIKE_X_EDITION": {
+    "status": "success",
+    "brand": "MSI",
+    "model": "MEG X870E GODLIKE X EDITION",
+    "image_url": "https://storage-asset.msi.com/global/picture/product/product_1758015442aa5b67a43445b034e83ef9904e87c0aa.webp",
+    "page_url": "https://www.msi.com/Motherboard/MEG-X870E-GODLIKE-X-EDITION/Specification",
+    "file": "MSI_MEG_X870E_GODLIKE_X_EDITION_board.webp",
+    "thumb_file": "MSI_MEG_X870E_GODLIKE_X_EDITION_board_thumb.webp",
+    "width": 1000,
+    "height": 800,
+    "size_bytes": 109108,
+    "timestamp": "2026-09-22T17:42:36.874955+00:00"
+  },
+  "MSI_MEG_X870E_GODLIKE_MAX": {
+    "status": "success",
+    "brand": "MSI",
+    "model": "MEG X870E GODLIKE MAX",
+    "image_url": "https://storage-asset.msi.com/global/picture/product/product_177027072686c5c9c99aceb4507f3370b1830d4b8e.webp",
+    "page_url": "https://www.msi.com/Motherboard/MEG-X870E-GODLIKE-MAX/Specification",
+    "file": "MSI_MEG_X870E_GODLIKE_MAX_board.webp",
+    "thumb_file": "MSI_MEG_X870E_GODLIKE_MAX_board_thumb.webp",
+    "width": 1000,
+    "height": 800,
+    "size_bytes": 86310,
+    "timestamp": "2026-09-22T17:42:39.986179+00:00"
+  },
+  "MSI_MEG_X870E_GODLIKE": {
+    "status": "success",
+    "brand": "MSI",
+    "model": "MEG X870E GODLIKE",
+    "image_url": "https://storage-asset.msi.com/global/picture/product/product_1731051450ac5edc06ffed1827829d47a08abe8258.webp",
+    "page_url": "https://www.msi.com/Motherboard/MEG-X870E-GODLIKE/Specification",
+    "file": "MSI_MEG_X870E_GODLIKE_board.webp",
+    "thumb_file": "MSI_MEG_X870E_GODLIKE_board_thumb.webp",
+    "width": 1000,
+    "height": 800,
+    "size_bytes": 82374,
+    "timestamp": "2026-09-22T17:42:45.107423+00:00"
+  },
+  "MSI_MEG_X870E_ACE_MAX": {
+    "status": "success",
+    "brand": "MSI",
+    "model": "MEG X870E ACE MAX",
+    "image_url": "https://storage-asset.msi.com/global/picture/product/product_17633467081e4b9597921af6378c97eb0644fe1c23.webp",
+    "page_url": "https://www.msi.com/Motherboard/MEG-X870E-ACE-MAX/Specification",
+    "file": "MSI_MEG_X870E_ACE_MAX_board.webp",
+    "thumb_file": "MSI_MEG_X870E_ACE_MAX_board_thumb.webp",
+    "width": 1000,
+    "height": 800,
+    "size_bytes": 106064,
+    "timestamp": "2026-09-22T17:42:49.071584+00:00"
+  },
+  "MSI_MPG_X870E_CARBON_WIFI": {
+    "status": "success",
+    "brand": "MSI",
+    "model": "MPG X870E CARBON WIFI",
+    "image_url": "https://storage-asset.msi.com/global/picture/product/product_1749001928e6424b09510f96180adeb2c88cab561b.webp",
+    "page_url": "https://www.msi.com/Motherboard/MPG-X870E-CARBON-WIFI/Specification",
+    "file": "MSI_MPG_X870E_CARBON_WIFI_board.webp",
+    "thumb_file": "MSI_MPG_X870E_CARBON_WIFI_board_thumb.webp",
+    "width": 1000,
+    "height": 800,
+    "size_bytes": 114486,
+    "timestamp": "2026-09-22T17:42:54.992920+00:00"
+  }
+}

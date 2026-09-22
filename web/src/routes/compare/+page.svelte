@@ -550,7 +550,10 @@
             </th>
             {#each comparedBoards as board, i (board.id)}
               {@const typed = board.typed || {}}
-              {@const thumb = board.specs?.['Rear I/O']?.['Rear I/O Image Thumb'] || typed.rear_io_image}
+              {@const boardThumb = typed.board_image_thumb || typed.board_image || board.specs?.General?.['Board Image Thumb'] || board.specs?.General?.['Board Image']}
+              {@const ioThumb = board.specs?.['Rear I/O']?.['Rear I/O Image Thumb'] || typed.rear_io_image}
+              {@const thumb = boardThumb || ioThumb}
+              {@const fullModalImg = typed.board_image || typed.rear_io_image || thumb}
               <th style="min-width: 175px; max-width: 220px;" class="text-center position-relative py-3 bg-black {baselineId === board.id ? 'border-warning shadow-sm' : ''}">
                 <!-- Move Column Left / Right Buttons -->
                 <div class="position-absolute top-0 start-0 m-1 d-flex gap-1">
@@ -589,13 +592,13 @@
                     <button
                       type="button"
                       class="p-0 border-0 bg-transparent cursor-pointer"
-                      onclick={() => openImageModal(thumb, `${board.brand} ${board.model}`)}
-                      title="Click to view Rear I/O panel"
+                      onclick={() => openImageModal(fullModalImg, `${board.brand} ${board.model}`)}
+                      title={boardThumb ? 'Click to view Motherboard PCB' : 'Click to view Rear I/O panel'}
                     >
                       <img
                         src={thumb}
                         alt="{board.brand} {board.model}"
-                        style="max-height: 48px; object-fit: contain;"
+                        style="max-height: 54px; object-fit: contain;"
                         class="rounded bg-dark p-1 hover-zoom"
                       />
                     </button>
