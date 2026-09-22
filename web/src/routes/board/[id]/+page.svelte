@@ -1,9 +1,11 @@
 <script lang="ts">
   import { compareStore } from '$lib/stores/compare';
   import { parseNotesList, parseM2Generations, m2GenBadgeClass } from '$lib/table_logic';
+  import LaneSharingSimulator from '$lib/components/LaneSharingSimulator.svelte';
 
   let { data } = $props();
   let board = $derived(data.board);
+  let simulatorOpen = $state(false);
 </script>
 
 {#if !board}
@@ -46,6 +48,14 @@
             <i class="bi bi-layers-half me-1"></i> Compare ({$compareStore.length})
           </a>
         {/if}
+
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-info d-flex align-items-center gap-1"
+          onclick={() => (simulatorOpen = true)}
+        >
+          <i class="bi bi-diagram-3"></i> Simulate Lane Sharing
+        </button>
 
         {#if (typed.website_url || board.specs?.Links?.Website)?.startsWith('http')}
           <a
@@ -307,9 +317,18 @@
         {#if notes.length > 0}
           <div class="col-12">
             <div class="card bg-dark border-secondary shadow-sm">
-              <div class="card-header bg-black border-secondary d-flex align-items-center gap-2">
-                <i class="bi bi-info-circle text-info"></i>
-                <h2 class="h5 mb-0 text-light">Lane Sharing, Bifurcation & Notes</h2>
+              <div class="card-header bg-black border-secondary d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-info-circle text-info"></i>
+                  <h2 class="h5 mb-0 text-light">Lane Sharing, Bifurcation & Notes</h2>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-info text-dark fw-semibold d-flex align-items-center gap-1"
+                  onclick={() => (simulatorOpen = true)}
+                >
+                  <i class="bi bi-diagram-3-fill"></i> Simulate Lanes
+                </button>
               </div>
               <div class="card-body">
                 <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
@@ -327,4 +346,6 @@
       {/if}
     </div>
   </div>
+
+  <LaneSharingSimulator {board} isOpen={simulatorOpen} onClose={() => (simulatorOpen = false)} />
 {/if}
