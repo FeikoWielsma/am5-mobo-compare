@@ -42,7 +42,7 @@ def sync_to_web_static(data_dir: str, web_static_dir: str = "web/static") -> Non
             shutil.copy2(src, dst)
 
     if os.path.exists(IO_IMAGE_DIR):
-        for sub in [("img", "io"), ("static", "img", "io")]:
+        for sub in [("static", "img", "io")]:
             target_img_dir = os.path.join(web_static_dir, *sub)
             os.makedirs(target_img_dir, exist_ok=True)
             for img_name in os.listdir(IO_IMAGE_DIR):
@@ -54,7 +54,7 @@ def sync_to_web_static(data_dir: str, web_static_dir: str = "web/static") -> Non
 
     from loaders.config import BOARD_IMAGE_DIR
     if os.path.exists(BOARD_IMAGE_DIR):
-        for sub in [("img", "boards"), ("static", "img", "boards")]:
+        for sub in [("static", "img", "boards")]:
             target_img_dir = os.path.join(web_static_dir, *sub)
             os.makedirs(target_img_dir, exist_ok=True)
             for img_name in os.listdir(BOARD_IMAGE_DIR):

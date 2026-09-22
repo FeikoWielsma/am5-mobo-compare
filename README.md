@@ -86,11 +86,13 @@ The suite starts its own Flask server, so nothing needs to be running first.
 
 ## 🌐 Deployment
 
-Three environments, all running the same `Dockerfile` (Gunicorn on `$PORT`).
+The production Docker image serves the SvelteKit site with Caddy. The build
+generates its JSON catalog and rear I/O images from the Git LFS spreadsheet,
+and packages the committed motherboard PCB WebP images.
 
 | Env | URL | How it deploys |
 | --- | --- | --- |
-| **Prod** | https://app-xgnfoyjvrq-uc.a.run.app | GCP Cloud Run, service `app`, project `central-perk-259621`, region `us-central1`. Deployed **manually** (see below). |
+| **Prod** | https://am5mobo.razortek.nl | GCP Cloud Run, service `app`, project `central-perk-259621`, region `us-central1`. Deployed **manually** (see below). |
 | **Staging** | https://am5mobo.feikowielsma.nl | Forgejo CI (`.forgejo/workflows/build.yml`) builds on push to the `staging` branch, pushes to the Forgejo registry; Watchtower pulls it. |
 | **Dev** | https://am5mobo-dev.feikowielsma.nl | Built on the home server from a local checkout. |
 
@@ -103,10 +105,10 @@ gcloud run deploy app \
   --region us-central1
 ```
 
-The Docker build runs `scripts/init_db.py`, so the image's `mobo.db` is
-rebuilt from the committed spreadsheet rather than using the committed
-`.db` file. Staging additionally runs `scripts/fetch_sheet.py` first to
-pull the latest data straight from Google Sheets.
+The Docker build runs `scripts/build_data.py` and verifies that the built site
+contains its JSON catalog and every image referenced by that catalog. Staging
+additionally runs `scripts/fetch_sheet.py` to pull the latest data from Google
+Sheets before building.
 
 Motherboard IDs are derived from the board's **brand and model**
 (`loaders/ids.py`), so refreshing the spreadsheet no longer disturbs them and

@@ -1,7 +1,6 @@
 .git
 .venv
 __pycache__
-*.xlsx
 mobo.db
 node_modules
 web/node_modules
@@ -10,3 +9,8 @@ web/build
 scratch
 tests
 .pytest_cache
+/data
+/static/img/io
+/web/static/data
+/web/static/img
+/web/static/static
