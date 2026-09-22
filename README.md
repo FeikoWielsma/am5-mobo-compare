@@ -92,11 +92,17 @@ and packages the committed motherboard PCB WebP images.
 
 | Env | URL | How it deploys |
 | --- | --- | --- |
-| **Prod** | https://am5mobo.razortek.nl | GCP Cloud Run, service `app`, project `central-perk-259621`, region `us-central1`. Deployed **manually** (see below). |
+| **Prod** | https://am5mobo.razortek.nl | GCP Cloud Run, service `app`, project `central-perk-259621`, region `us-central1`. GitHub `main` pushes trigger Cloud Build and deploy automatically. |
 | **Staging** | https://am5mobo.feikowielsma.nl | Forgejo CI (`.forgejo/workflows/build.yml`) builds on push to the `staging` branch, pushes to the Forgejo registry; Watchtower pulls it. |
 | **Dev** | https://am5mobo-dev.feikowielsma.nl | Built on the home server from a local checkout. |
 
 ### Deploying to prod
+
+Pushing `main` to GitHub starts the production build. The Docker build resolves
+the public Git LFS workbook when Cloud Build checks out only its pointer, then
+builds the catalog and verifies the finished assets before deployment.
+
+For a manual deployment from a local checkout:
 
 ```bash
 gcloud run deploy app \
@@ -104,6 +110,9 @@ gcloud run deploy app \
   --project central-perk-259621 \
   --region us-central1
 ```
+
+The manual command uploads the local checkout. Run it with Git LFS installed
+and the full spreadsheet downloaded.
 
 The Docker build runs `scripts/build_data.py` and verifies that the built site
 contains its JSON catalog and every image referenced by that catalog. Staging

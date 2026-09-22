@@ -11,6 +11,21 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from loaders.excel_loader import load_data
 from loaders.data_transformer import unflatten_record
 from models.database import DotWrapper
+from scripts.build_data import build_data
+
+
+def test_build_data_rejects_lfs_pointer(tmp_path, monkeypatch):
+    workbook = tmp_path / "boards.xlsx"
+    workbook.write_text(
+        "version https://git-lfs.github.com/spec/v1\n"
+        "oid sha256:" + "0" * 64 + "\n"
+        "size 177776431\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("loaders.excel_loader.EXCEL_FILE", str(workbook))
+
+    with pytest.raises(RuntimeError, match="Git LFS spreadsheet"):
+        build_data(output_dir=str(tmp_path / "output"), excel_path=str(workbook))
 
 # Mock config to use a temp file
 @pytest.fixture

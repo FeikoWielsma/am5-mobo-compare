@@ -10,9 +10,12 @@ COPY loaders/ loaders/
 COPY models/ models/
 COPY services/ services/
 COPY scripts/build_data.py scripts/build_data.py
+COPY scripts/resolve_lfs_workbook.py scripts/resolve_lfs_workbook.py
 COPY static/img/boards/ static/img/boards/
 COPY pyproject.toml ./
-RUN mkdir -p web/static web/src/lib/data && python scripts/build_data.py
+RUN mkdir -p web/static web/src/lib/data \
+    && python scripts/resolve_lfs_workbook.py \
+    && python scripts/build_data.py
 
 # Stage 2: Build static web app
 FROM node:22-alpine AS builder

@@ -84,6 +84,10 @@ def build_data(output_dir: str = "data", excel_path: str = EXCEL_FILE) -> tuple[
 
     print(f"Ingesting AM5 dataset from: {excel_path}")
     motherboards, header_tree = load_data()
+    if not motherboards:
+        raise RuntimeError(
+            "The workbook produced no motherboard records. Check that the Git LFS spreadsheet was downloaded."
+        )
     print(f"Loaded {len(motherboards)} motherboard records across {len(SHEETS_TO_LOAD)} sheets.")
 
     # Validate overall record integrity (e.g. unique IDs)
