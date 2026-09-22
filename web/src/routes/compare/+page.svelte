@@ -408,9 +408,9 @@
     </div>
 
     <!-- Controls -->
-    <div class="d-flex flex-wrap align-items-center gap-3">
+    <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3 w-100 w-md-auto">
       <!-- Inline Add Motherboard Search -->
-      <div class="position-relative search-add-container" style="min-width: 250px; max-width: 320px;">
+      <div class="position-relative search-add-container flex-grow-1 flex-md-grow-0" style="min-width: 200px; max-width: 100%;">
         <div class="input-group input-group-sm">
           <span class="input-group-text bg-dark border-secondary text-secondary">
             <i class="bi bi-search"></i>
@@ -438,7 +438,7 @@
         {#if showAddDropdown && searchMatches.length > 0}
           <div
             class="dropdown-menu show bg-dark border-secondary shadow-lg p-1 position-absolute mt-1"
-            style="max-height: 340px; overflow-y: auto; z-index: 1050; width: 340px; left: 0;"
+            style="max-height: 340px; overflow-y: auto; z-index: 1050; width: min(340px, 95vw); left: 0;"
           >
             {#each searchMatches as mobo}
               {@const thumb = mobo.specs?.['Rear I/O']?.['Rear I/O Image Thumb'] || mobo.typed?.rear_io_image}
@@ -468,32 +468,34 @@
         {:else if showAddDropdown && addSearchQuery.trim()}
           <div
             class="dropdown-menu show bg-dark border-secondary shadow-lg p-3 text-center text-secondary small position-absolute mt-1"
-            style="z-index: 1050; width: 320px; left: 0;"
+            style="z-index: 1050; width: min(320px, 95vw); left: 0;"
           >
             No unselected models match "{addSearchQuery}"
           </div>
         {/if}
       </div>
 
-      <div class="form-check form-switch small">
-        <input class="form-check-input" type="checkbox" id="diffToggle" bind:checked={highlightDiffs} />
-        <label class="form-check-label text-light fw-medium" for="diffToggle">
-          <i class="bi bi-highlighter text-warning"></i> Highlight Diffs
-        </label>
-      </div>
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="form-check form-switch small mb-0">
+          <input class="form-check-input" type="checkbox" id="diffToggle" bind:checked={highlightDiffs} />
+          <label class="form-check-label text-light fw-medium" for="diffToggle">
+            <i class="bi bi-highlighter text-warning"></i> <span class="d-none d-xs-inline">Highlight</span> Diffs
+          </label>
+        </div>
 
-      <div class="form-check form-switch small">
-        <input class="form-check-input" type="checkbox" id="identicalToggle" bind:checked={hideIdentical} />
-        <label class="form-check-label text-light fw-medium" for="identicalToggle">
-          <i class="bi bi-eye-slash text-info"></i> Hide Identical
-        </label>
+        <div class="form-check form-switch small mb-0">
+          <input class="form-check-input" type="checkbox" id="identicalToggle" bind:checked={hideIdentical} />
+          <label class="form-check-label text-light fw-medium" for="identicalToggle">
+            <i class="bi bi-eye-slash text-info"></i> Hide Same
+          </label>
+        </div>
       </div>
 
       {#if baselineBoard}
         <div class="d-flex align-items-center gap-1 bg-black border border-warning rounded px-2 py-1 small shadow-sm">
           <i class="bi bi-star-fill text-warning"></i>
-          <span class="text-secondary" style="font-size: 0.75rem;">Baseline:</span>
-          <span class="text-white fw-semibold text-truncate" style="max-width: 140px; font-size: 0.75rem;">{baselineBoard.brand} {baselineBoard.model}</span>
+          <span class="text-secondary" style="font-size: 0.75rem;">Base:</span>
+          <span class="text-white fw-semibold text-truncate" style="max-width: 120px; font-size: 0.75rem;">{baselineBoard.brand} {baselineBoard.model}</span>
           <button
             type="button"
             class="btn btn-xs btn-link text-secondary p-0 ms-1 border-0"
@@ -505,19 +507,21 @@
         </div>
       {/if}
 
-      <button
-        type="button"
-        class="btn btn-outline-success btn-sm"
-        disabled={comparedBoards.length === 0}
-        onclick={() => (showExportModal = true)}
-        title="Export comparison to Reddit, Markdown, CSV, or PNG Image Card"
-      >
-        <i class="bi bi-box-arrow-up me-1"></i> Export
-      </button>
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-outline-success btn-sm py-1 px-2"
+          disabled={comparedBoards.length === 0}
+          onclick={() => (showExportModal = true)}
+          title="Export comparison to Reddit, Markdown, CSV, or PNG Image Card"
+        >
+          <i class="bi bi-box-arrow-up me-1"></i> Export
+        </button>
 
-      <a href="/" class="btn btn-outline-primary btn-sm" title="Browse full catalog on Directory">
-        <i class="bi bi-grid-3x3 me-1"></i> Browse Catalog
-      </a>
+        <a href="/" class="btn btn-outline-primary btn-sm py-1 px-2" title="Browse full catalog on Directory">
+          <i class="bi bi-grid-3x3 me-1"></i> Catalog
+        </a>
+      </div>
     </div>
   </div>
 
@@ -534,18 +538,18 @@
     </div>
   {:else}
     <!-- Side-by-Side Comparison Table -->
-    <div class="table-responsive border border-secondary rounded shadow-sm">
+    <div class="table-responsive border border-secondary rounded shadow-sm compare-table-container">
       <table class="table table-dark table-hover table-bordered align-middle mb-0 small">
         <!-- Sticky Board Headers -->
         <thead class="table-dark align-top border-bottom border-secondary">
           <tr>
-            <th style="width: 240px; min-width: 220px;" class="bg-black text-secondary text-uppercase py-3 ps-3">
+            <th style="width: 200px; min-width: 170px; max-width: 220px;" class="bg-black text-secondary text-uppercase py-3 ps-3 sticky-col-header">
               Specification
             </th>
             {#each comparedBoards as board, i (board.id)}
               {@const typed = board.typed || {}}
               {@const thumb = board.specs?.['Rear I/O']?.['Rear I/O Image Thumb'] || typed.rear_io_image}
-              <th style="min-width: 200px;" class="text-center position-relative py-3 bg-black {baselineId === board.id ? 'border-warning shadow-sm' : ''}">
+              <th style="min-width: 175px; max-width: 220px;" class="text-center position-relative py-3 bg-black {baselineId === board.id ? 'border-warning shadow-sm' : ''}">
                 <!-- Move Column Left / Right Buttons -->
                 <div class="position-absolute top-0 start-0 m-1 d-flex gap-1">
                   <button
@@ -648,8 +652,10 @@
               title="Click to {collapsedSections.has('scorecard') ? 'expand' : 'collapse'} Scorecard Summary"
             >
               <th colspan={comparedBoards.length + 1} class="text-uppercase fw-bold text-primary px-3 py-2">
-                <i class="bi {collapsedSections.has('scorecard') ? 'bi-chevron-right' : 'bi-chevron-down'} me-1"></i>
-                <i class="bi bi-star-fill text-warning me-1"></i> Scorecard Summary
+                <span class="sticky-section-title">
+                  <i class="bi {collapsedSections.has('scorecard') ? 'bi-chevron-right' : 'bi-chevron-down'} me-1"></i>
+                  <i class="bi bi-star-fill text-warning me-1"></i> Scorecard Summary
+                </span>
               </th>
             </tr>
 
@@ -1029,8 +1035,10 @@
                 title="Click to {collapsedSections.has(section.id) ? 'expand' : 'collapse'} {section.title}"
               >
                 <th colspan={comparedBoards.length + 1} class="text-uppercase fw-bold text-primary px-3 py-2">
-                  <i class="bi {collapsedSections.has(section.id) ? 'bi-chevron-right' : 'bi-chevron-down'} me-1"></i>
-                  {section.title}
+                  <span class="sticky-section-title">
+                    <i class="bi {collapsedSections.has(section.id) ? 'bi-chevron-right' : 'bi-chevron-down'} me-1"></i>
+                    {section.title}
+                  </span>
                 </th>
               </tr>
 
@@ -1116,9 +1124,31 @@
 {/if}
 
 <style>
+  .sticky-col-header {
+    position: sticky;
+    left: 0;
+    z-index: 25;
+    background-color: #0d1117 !important;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.45);
+  }
   .row-label {
-    background-color: #161b22;
-    min-width: 220px;
+    position: sticky;
+    left: 0;
+    z-index: 15;
+    background-color: #161b22 !important;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.45);
+    min-width: 170px;
+    max-width: 220px;
+  }
+  .sticky-section-title {
+    position: sticky;
+    left: 1rem;
+    display: inline-flex;
+    align-items: center;
+    max-width: calc(100vw - 32px);
+  }
+  .compare-table-container {
+    -webkit-overflow-scrolling: touch;
   }
   .hover-primary:hover {
     color: #0d6efd !important;

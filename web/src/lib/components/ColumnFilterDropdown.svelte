@@ -111,8 +111,7 @@
 
     <!-- Dropdown Menu -->
     <div
-      class="dropdown-menu show p-2 shadow-lg bg-dark text-light border border-secondary"
-      style="position: absolute; top: 100%; left: 0; min-width: 230px; max-width: 320px; z-index: 1045; margin-top: 4px;"
+      class="dropdown-menu show p-2 shadow-lg bg-dark text-light border border-secondary filter-dropdown-menu"
     >
       <!-- Search Input inside Dropdown -->
       <div class="input-group input-group-sm mb-2">
@@ -216,8 +215,26 @@
 </div>
 
 <style>
+  .filter-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 230px;
+    max-width: 320px;
+    z-index: 1045;
+    margin-top: 4px;
+  }
+  @media (max-width: 767.98px) {
+    .filter-dropdown-menu {
+      min-width: min(220px, calc(100vw - 24px));
+      max-width: calc(100vw - 24px);
+    }
+  }
   .cursor-pointer {
     cursor: pointer;
+  }
+  .filter-option-item {
+    min-height: 32px;
   }
   .filter-option-item:hover {
     background-color: rgba(255, 255, 255, 0.08);

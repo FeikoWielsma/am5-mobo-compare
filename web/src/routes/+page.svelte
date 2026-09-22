@@ -523,11 +523,11 @@
       </h1>
     </div>
 
-    <!-- Quick Filter Action Chips -->
-    <div class="d-flex flex-wrap align-items-center gap-2">
+    <!-- Quick Filter Action Chips (Horizontally swipeable on mobile) -->
+    <div class="filter-chips-scroll align-items-center gap-1.5 gap-sm-2">
       <button
         type="button"
-        class="btn btn-sm {hasActiveFilters ? 'btn-warning text-dark fw-semibold' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {hasActiveFilters ? 'btn-warning text-dark fw-semibold' : 'btn-outline-secondary'}"
         onclick={resetFilters}
         title={hasActiveFilters ? 'Reset all search and column filters' : 'Showing all boards'}
       >
@@ -539,7 +539,7 @@
 
       <button
         type="button"
-        class="btn btn-sm {filterPcie5 ? 'btn-primary text-white' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {filterPcie5 ? 'btn-primary text-white' : 'btn-outline-secondary'}"
         onclick={() => {
           filterPcie5 = !filterPcie5;
           saveStateToUrl();
@@ -551,7 +551,7 @@
 
       <button
         type="button"
-        class="btn btn-sm {filterX8X8 ? 'btn-primary text-white shadow' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {filterX8X8 ? 'btn-primary text-white shadow' : 'btn-outline-secondary'}"
         onclick={() => {
           filterX8X8 = !filterX8X8;
           saveStateToUrl();
@@ -569,7 +569,7 @@
 
       <button
         type="button"
-        class="btn btn-sm {filterUsb4 ? 'btn-primary text-white' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {filterUsb4 ? 'btn-primary text-white' : 'btn-outline-secondary'}"
         onclick={() => {
           filterUsb4 = !filterUsb4;
           saveStateToUrl();
@@ -581,7 +581,7 @@
 
       <button
         type="button"
-        class="btn btn-sm {filterWifi7 ? 'btn-primary text-white' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {filterWifi7 ? 'btn-primary text-white' : 'btn-outline-secondary'}"
         onclick={() => {
           filterWifi7 = !filterWifi7;
           saveStateToUrl();
@@ -593,7 +593,7 @@
 
       <button
         type="button"
-        class="btn btn-sm {filterWhiteTheme && selectedColorTheme === 'all' ? 'btn-light text-dark fw-bold shadow' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {filterWhiteTheme && selectedColorTheme === 'all' ? 'btn-light text-dark fw-bold shadow' : 'btn-outline-secondary'}"
         onclick={() => {
           filterWhiteTheme = !filterWhiteTheme;
           if (filterWhiteTheme) {
@@ -612,7 +612,7 @@
 
       <button
         type="button"
-        class="btn btn-sm {filterBlackTheme && selectedColorTheme === 'stealth' ? 'btn-dark text-white border-light fw-bold shadow' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {filterBlackTheme && selectedColorTheme === 'stealth' ? 'btn-dark text-white border-light fw-bold shadow' : 'btn-outline-secondary'}"
         onclick={() => {
           filterBlackTheme = !filterBlackTheme;
           if (filterBlackTheme) {
@@ -632,10 +632,10 @@
       </button>
 
       <!-- Granular Color & Aesthetic Dropdown -->
-      <div class="dropdown d-inline-block position-relative">
+      <div class="dropdown d-inline-block position-relative flex-shrink-0">
         <button
           type="button"
-          class="btn btn-sm {selectedColorTheme !== 'all' ? 'btn-info text-dark fw-bold shadow' : 'btn-outline-secondary'} dropdown-toggle"
+          class="btn btn-sm flex-shrink-0 text-nowrap {selectedColorTheme !== 'all' ? 'btn-info text-dark fw-bold shadow' : 'btn-outline-secondary'} dropdown-toggle"
           onclick={(e) => {
             e.stopPropagation();
             showColorDropdown = !showColorDropdown;
@@ -829,7 +829,7 @@
 
       <button
         type="button"
-        class="btn btn-sm {filterBackConnect ? 'btn-primary text-white fw-bold shadow' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {filterBackConnect ? 'btn-primary text-white fw-bold shadow' : 'btn-outline-secondary'}"
         onclick={() => {
           filterBackConnect = !filterBackConnect;
           saveStateToUrl();
@@ -844,7 +844,7 @@
 
       <button
         type="button"
-        class="btn btn-sm {filterTwoDimm ? 'btn-primary text-white fw-bold shadow' : 'btn-outline-secondary'}"
+        class="btn btn-sm flex-shrink-0 text-nowrap {filterTwoDimm ? 'btn-primary text-white fw-bold shadow' : 'btn-outline-secondary'}"
         onclick={() => {
           filterTwoDimm = !filterTwoDimm;
           saveStateToUrl();
@@ -893,52 +893,54 @@
     </div>
 
     <!-- Compare Toolbar Buttons -->
-    <div class="col-12 col-md-7 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+    <div class="col-12 col-md-7 d-flex flex-wrap align-items-center justify-content-md-end gap-1.5 gap-sm-2 toolbar-actions">
       <button
         type="button"
-        class="btn btn-sm btn-outline-secondary"
+        class="btn btn-sm btn-outline-secondary py-1 px-2"
         onclick={selectVisible}
         title="Add all currently filtered motherboards to compare"
       >
-        <i class="bi bi-check2-all"></i> Select Visible ({filteredBoards.length})
+        <i class="bi bi-check2-all"></i> <span class="d-none d-sm-inline">Select</span> Visible ({filteredBoards.length})
       </button>
 
       {#if $compareStore.length > 0}
         <button
           type="button"
-          class="btn btn-sm btn-outline-danger"
+          class="btn btn-sm btn-outline-danger py-1 px-2"
           onclick={clearCompareSelection}
           title="Clear selected boards"
         >
-          <i class="bi bi-trash"></i> Clear ({$compareStore.length})
+          <i class="bi bi-trash"></i> <span class="d-none d-sm-inline">Clear</span> ({$compareStore.length})
         </button>
 
-        <a href="/compare?ids={$compareStore.join(',')}" class="btn btn-sm btn-primary px-3 shadow-sm fw-semibold">
+        <a href="/compare?ids={$compareStore.join(',')}" class="btn btn-sm btn-primary px-2.5 py-1 shadow-sm fw-semibold">
           <i class="bi bi-layers-half me-1"></i> Compare ({$compareStore.length})
         </a>
       {:else}
-        <button type="button" class="btn btn-sm btn-secondary opacity-50" disabled>
+        <button type="button" class="btn btn-sm btn-secondary opacity-50 py-1 px-2" disabled>
           <i class="bi bi-layers-half me-1"></i> Compare (0)
         </button>
       {/if}
 
       <button
         type="button"
-        class="btn btn-sm btn-outline-info"
+        class="btn btn-sm btn-outline-info py-1 px-2"
         onclick={copyShareLink}
         title="Copy shareable link with active filters and columns"
       >
         <i class="bi {shareCopied ? 'bi-check2' : 'bi-share'} me-1"></i>
-        {shareCopied ? 'Copied!' : 'Share View'}
+        <span class="d-none d-sm-inline">{shareCopied ? 'Copied!' : 'Share View'}</span>
+        <span class="d-sm-none">{shareCopied ? 'Copied!' : 'Share'}</span>
       </button>
 
       <button
         type="button"
-        class="btn btn-sm btn-outline-success"
+        class="btn btn-sm btn-outline-success py-1 px-2"
         onclick={() => (showColumnPicker = true)}
         title="Add specification column to the table"
       >
-        <i class="bi bi-plus-lg"></i> Add Column
+        <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Add Column</span>
+        <span class="d-sm-none">Col +</span>
       </button>
     </div>
   </div>
@@ -1337,6 +1339,25 @@
   </div>
 </div>
 
+<!-- Mobile Floating Compare Dock -->
+{#if $compareStore.length > 0}
+  <div
+    class="mobile-compare-dock d-md-none position-fixed bottom-0 start-0 end-0 bg-black border-top border-primary p-2 px-3 shadow-lg d-flex align-items-center justify-content-between"
+    style="z-index: 1040; padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));"
+  >
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary fs-6">{$compareStore.length}</span>
+      <span class="small fw-semibold text-light">Board{$compareStore.length > 1 ? 's' : ''} Selected</span>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" onclick={clearCompareSelection}>Clear</button>
+      <a href="/compare?ids={$compareStore.join(',')}" class="btn btn-sm btn-primary py-1 px-3 fw-bold shadow-sm">
+        <i class="bi bi-layers-half me-1"></i> Compare Now
+      </a>
+    </div>
+  </div>
+{/if}
+
 <!-- Add Dynamic Column Picker Modal -->
 <ColumnPickerModal
   features={features}
@@ -1370,18 +1391,22 @@
     role="dialog"
   >
     <!-- Drawer Header -->
-    <div class="p-3 border-bottom border-secondary bg-black d-flex align-items-center justify-content-between">
+    <div
+      class="p-3 border-bottom border-secondary bg-black d-flex align-items-center justify-content-between drawer-header"
+      style="padding-top: max(1rem, env(safe-area-inset-top, 1rem)) !important;"
+    >
       <div>
         <div class="drawer-brand-text text-uppercase fw-bold">{b.brand}</div>
-        <h2 class="h5 fw-bold text-white mb-0">{b.model}</h2>
+        <h2 class="h5 fw-bold text-white mb-0 text-truncate" style="max-width: 75vw;">{b.model}</h2>
       </div>
       <button
         type="button"
-        class="btn btn-sm btn-outline-secondary text-light"
+        class="btn btn-outline-secondary text-light p-1 px-2 d-flex align-items-center justify-content-center"
         onclick={closeDetail}
         aria-label="Close"
+        style="min-width: 38px; min-height: 38px;"
       >
-        <i class="bi bi-x-lg"></i>
+        <i class="bi bi-x-lg fs-6"></i>
       </button>
     </div>
 
@@ -1704,6 +1729,25 @@
 {/if}
 
 <style>
+  /* Quick Filter Chips Carousel */
+  .filter-chips-scroll {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .filter-chips-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  @media (min-width: 992px) {
+    .filter-chips-scroll {
+      flex-wrap: wrap;
+      overflow-x: visible;
+    }
+  }
+
   .sticky-toolbar {
     position: sticky;
     top: 0;
@@ -1715,26 +1759,49 @@
     border-bottom: 1px solid #30363d;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
   }
-  :global(.sticky-header-row-1 th) {
-    position: sticky;
-    top: var(--tb-h, 48px);
-    z-index: 1020;
-    background-color: #161b22 !important;
-    border-bottom: 1px solid #30363d !important;
-    box-shadow: inset 0 -1px 0 #30363d;
+
+  /* Desktop Sticky Headers (only on large screens where horizontal overflow is contained) */
+  @media (min-width: 992px) {
+    :global(.sticky-header-row-1 th) {
+      position: sticky;
+      top: var(--tb-h, 48px);
+      z-index: 1020;
+      background-color: #161b22 !important;
+      border-bottom: 1px solid #30363d !important;
+      box-shadow: inset 0 -1px 0 #30363d;
+    }
+    :global(.sticky-header-row-2 td) {
+      position: sticky;
+      top: calc(var(--tb-h, 48px) + var(--r1-h, 43px) - 1px);
+      z-index: 1019;
+      background-color: #1c2128 !important;
+      border-bottom: 2px solid #30363d !important;
+      box-shadow: inset 0 -2px 0 #30363d, 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
+    :global(.table-container),
+    :global(.table-responsive) {
+      overflow: visible !important;
+    }
   }
-  :global(.sticky-header-row-2 td) {
-    position: sticky;
-    top: calc(var(--tb-h, 48px) + var(--r1-h, 43px) - 1px);
-    z-index: 1019;
-    background-color: #1c2128 !important;
-    border-bottom: 2px solid #30363d !important;
-    box-shadow: inset 0 -2px 0 #30363d, 0 4px 8px rgba(0, 0, 0, 0.4);
+
+  /* Mobile Table Container Constraints */
+  @media (max-width: 991.98px) {
+    :global(.table-container) {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    :global(.table-responsive) {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      max-width: 100%;
+    }
+    /* On mobile, don't let double header rows take over 50% of the screen */
+    :global(.sticky-header-row-1 th),
+    :global(.sticky-header-row-2 td) {
+      position: static !important;
+    }
   }
-  :global(.table-container),
-  :global(.table-responsive) {
-    overflow: visible !important;
-  }
+
   .cursor-pointer {
     cursor: pointer;
   }
@@ -1770,6 +1837,8 @@
   :global(.board-row.table-active:hover > td) {
     background-color: rgba(13, 110, 253, 0.3) !important;
   }
+
+  /* Slide-out Drawer */
   .drawer {
     position: fixed;
     top: 0;
@@ -1780,6 +1849,22 @@
     z-index: 1055;
     animation: slideIn 0.2s ease-out;
   }
+
+  /* Mobile Full-Screen Drawer */
+  @media (max-width: 768px) {
+    .drawer {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      height: 100dvh !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+  }
+
   @keyframes slideIn {
     from {
       transform: translateX(100%);

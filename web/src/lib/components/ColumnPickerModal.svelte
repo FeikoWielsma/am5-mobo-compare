@@ -306,10 +306,10 @@
     style="z-index: 1065;"
     onkeydown={(e) => e.key === 'Escape' && onClose()}
   >
-    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-md-down modal-dialog-centered">
       <div class="modal-content bg-dark text-light border border-secondary shadow-lg">
         <!-- Modal Header -->
-        <div class="modal-header bg-black border-secondary py-3 px-4 d-flex align-items-center justify-content-between">
+        <div class="modal-header bg-black border-secondary py-2 py-md-3 px-3 px-md-4 d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-3">
             <div class="p-2 rounded bg-primary-subtle text-primary border border-primary-subtle">
               <i class="bi bi-diagram-3-fill fs-5"></i>
@@ -406,7 +406,7 @@
           </div>
 
           <!-- Category Quick Jump Tabs -->
-          <div class="d-flex flex-wrap gap-1 align-items-center mt-2">
+          <div class="d-flex flex-nowrap flex-md-wrap gap-1 align-items-center mt-2 category-tabs-scroll pb-1">
             <button
               type="button"
               class="btn btn-sm py-1 px-2 {selectedCategoryTab === 'ALL'
@@ -650,6 +650,18 @@
 {/if}
 
 <style>
+  .category-tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .category-tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .category-tabs-scroll :global(button) {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
   .cursor-pointer {
     cursor: pointer;
   }
