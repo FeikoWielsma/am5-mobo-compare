@@ -15,8 +15,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts.fetch_board_images import (
     DomainPacer,
     BoardImageFetcher,
+    ThreadSafeManifest,
     extract_meta_image,
-    interleave_boards_by_domain,
+    partition_boards_by_domain,
 )
 
 
@@ -61,24 +62,38 @@ def test_extract_meta_image():
     assert extract_meta_image(html_twitter, base_url) == "https://example.com/hero.webp"
 
 
-def test_interleave_boards_by_domain():
-    """Verify round-robin interleaving avoids consecutive hits to same domain."""
+def test_partition_boards_by_domain():
+    """Verify partitioning separates boards into manufacturer domain queues."""
     boards = [
         {"id": "gigabyte-1", "brand": "Gigabyte"},
         {"id": "gigabyte-2", "brand": "Gigabyte"},
-        {"id": "gigabyte-3", "brand": "Gigabyte"},
         {"id": "asus-1", "brand": "ASUS"},
-        {"id": "asus-2", "brand": "ASUS"},
         {"id": "msi-1", "brand": "MSI"},
+        {"id": "asrock-1", "brand": "ASRock"},
+        {"id": "biostar-1", "brand": "Biostar"},
+        {"id": "other-1", "brand": "Colorful"},
     ]
-    interleaved = interleave_boards_by_domain(boards)
-    brands = [b["brand"] for b in interleaved]
+    partitions = partition_boards_by_domain(boards)
+    assert len(partitions["gigabyte"]) == 2
+    assert len(partitions["asus"]) == 1
+    assert len(partitions["msi"]) == 1
+    assert len(partitions["asrock"]) == 1
+    assert len(partitions["biostar"]) == 1
+    assert len(partitions["other"]) == 1
 
-    # No two consecutive boards should have the same brand while alternatives exist
-    assert brands[0] != brands[1]
-    assert brands[1] != brands[2]
-    # Check all boards are preserved
-    assert len(interleaved) == len(boards)
+
+def test_thread_safe_manifest():
+    """Verify thread-safe manifest records and saves cleanly."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        manifest = ThreadSafeManifest(tmpdir)
+        assert manifest.get("TEST_1") is None
+
+        manifest.record("TEST_1", {"status": "success", "file": "test.webp"})
+        assert manifest.get("TEST_1")["status"] == "success"
+
+        # Reload from disk
+        manifest2 = ThreadSafeManifest(tmpdir)
+        assert manifest2.get("TEST_1")["file"] == "test.webp"
 
 
 def test_download_and_process_image():

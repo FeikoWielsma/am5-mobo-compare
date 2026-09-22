@@ -2,18 +2,24 @@
 Automated motherboard PCB image fetcher and asset generator.
 
 Scrapes high-resolution motherboard PCB photos from manufacturer websites
-using anti-ban measures (curl_cffi browser impersonation, interleaved domain
-round-robin scheduling, randomized delay pacing, and caching manifest).
+using anti-ban measures:
+  - curl_cffi browser TLS & cipher impersonation (Chrome 124)
+  - Concurrent independent domain workers (ASRock, ASUS, Gigabyte, MSI, Biostar, etc. run in parallel)
+  - Adaptive per-domain pacing and exponential backoff
+  - Direct static CDN resolution (ASRock)
+  - Full-size WebP (1200px max, quality 85) & thumbnail (240px max, quality 80) generation
+  - Thread-safe caching manifest tracking
 
 Outputs:
-  - static/img/boards/{id}_board.webp (max 1200px, quality 85)
-  - static/img/boards/{id}_board_thumb.webp (max 240px, quality 80)
-  - static/img/boards/manifest.json (tracks scrape status and image origins)
+  - static/img/boards/{id}_board.webp
+  - static/img/boards/{id}_board_thumb.webp
+  - static/img/boards/manifest.json
 """
 
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import io
 import json
 import logging
@@ -21,8 +27,9 @@ import os
 import random
 import re
 import sys
+import threading
 import time
-from collections import defaultdict, deque
+from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import quote, unquote, urljoin, urlparse
@@ -117,40 +124,22 @@ def extract_meta_image(html_text: str, base_url: str) -> Optional[str]:
             m = m.strip()
             if not m:
                 continue
-            # Filter out known non-product images
             if any(re.search(neg, m, re.IGNORECASE) for neg in IGNORED_IMAGE_PATTERNS):
                 continue
             return urljoin(base_url, m)
     return None
 
 
-class BoardImageFetcher:
-    """Orchestrates resilient scraping of motherboard PCB photos."""
+class ThreadSafeManifest:
+    """Manages thread-safe manifest persistence."""
 
-    def __init__(
-        self,
-        output_dir: str = DEFAULT_OUTPUT_DIR,
-        base_delay: float = 1.5,
-        impersonate: str = "chrome124",
-        force: bool = False,
-        dry_run: bool = False,
-    ):
+    def __init__(self, output_dir: str):
         self.output_dir = output_dir
-        self.pacer = DomainPacer(base_delay=base_delay)
-        self.impersonate = impersonate
-        self.force = force
-        self.dry_run = dry_run
         self.manifest_path = os.path.join(output_dir, MANIFEST_FILENAME)
-        self.manifest = self._load_manifest()
+        self.lock = threading.Lock()
+        self.data: dict[str, Any] = self._load()
 
-        if cffi_requests is None:
-            raise RuntimeError(
-                "curl_cffi is required for scraping. Install via: uv add curl-cffi"
-            )
-        self.session = cffi_requests.Session(impersonate=self.impersonate)
-
-    def _load_manifest(self) -> dict[str, Any]:
-        """Load or initialize the scraping manifest."""
+    def _load(self) -> dict[str, Any]:
         if os.path.exists(self.manifest_path):
             try:
                 with open(self.manifest_path, "r", encoding="utf-8") as f:
@@ -159,15 +148,45 @@ class BoardImageFetcher:
                 logger.warning("Could not read manifest, starting fresh: %s", e)
         return {}
 
-    def _save_manifest(self) -> None:
-        """Persist manifest to disk."""
-        if self.dry_run:
-            return
+    def get(self, board_id: str) -> Optional[dict[str, Any]]:
+        with self.lock:
+            return self.data.get(board_id)
+
+    def record(self, board_id: str, entry: dict[str, Any]) -> None:
+        with self.lock:
+            self.data[board_id] = entry
+            self._save()
+
+    def _save(self) -> None:
         os.makedirs(self.output_dir, exist_ok=True)
         tmp_path = f"{self.manifest_path}.tmp"
         with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(self.manifest, f, indent=2, ensure_ascii=False)
+            json.dump(self.data, f, indent=2, ensure_ascii=False)
         os.replace(tmp_path, self.manifest_path)
+
+
+class BoardImageFetcher:
+    """Worker instance responsible for fetching and converting board photos."""
+
+    def __init__(
+        self,
+        output_dir: str = DEFAULT_OUTPUT_DIR,
+        manifest: Optional[ThreadSafeManifest] = None,
+        base_delay: float = 1.5,
+        impersonate: str = "chrome124",
+        force: bool = False,
+        dry_run: bool = False,
+    ):
+        self.output_dir = output_dir
+        self.manifest = manifest or ThreadSafeManifest(output_dir)
+        self.pacer = DomainPacer(base_delay=base_delay)
+        self.impersonate = impersonate
+        self.force = force
+        self.dry_run = dry_run
+
+        if cffi_requests is None:
+            raise RuntimeError("curl_cffi is required. Install via: uv add curl-cffi")
+        self.session = cffi_requests.Session(impersonate=self.impersonate)
 
     def should_skip(self, board_id: str) -> bool:
         """Check if board already has successfully downloaded webp assets."""
@@ -184,7 +203,7 @@ class BoardImageFetcher:
 
     def find_asrock_image_url(self, board: dict[str, Any]) -> Optional[str]:
         """
-        ASRock serves board photos on a direct static CDN bypassing Incapsula HTML bot protection.
+        ASRock serves board photos directly on static CDN bypassing Incapsula HTML bot protection.
         Pattern: https://www.asrock.com/mb/photo/{model}(L1).png
         """
         url = board.get("typed", {}).get("website_url") or board.get("specs", {}).get("Links", {}).get("Website", "")
@@ -216,13 +235,47 @@ class BoardImageFetcher:
         for cand_url in candidates:
             try:
                 self.pacer.pace(domain)
-                resp = self.session.head(cand_url, timeout=10)
+                resp = self.session.head(cand_url, timeout=8)
                 if resp.status_code == 200 and "image" in resp.headers.get("Content-Type", ""):
                     content_len = int(resp.headers.get("Content-Length", "0"))
-                    if content_len > 15000:  # Valid high-res board photo
+                    if content_len > 15000:
                         return cand_url
             except Exception as e:
                 logger.debug("ASRock candidate check failed %s: %s", cand_url, e)
+        return None
+
+    def find_biostar_image_url(self, url: str) -> Optional[str]:
+        """Extract PCB photo from Biostar product introduction page."""
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        self.pacer.pace(domain)
+
+        try:
+            resp = self.session.get(url, timeout=15)
+            if resp.status_code != 200:
+                return None
+            imgs = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', resp.text, re.I)
+            # Prefer top-down view
+            top_imgs = [
+                urljoin(url, img) for img in imgs
+                if "upload/motherboard" in img.lower() and "top" in img.lower() and "box" not in img.lower()
+            ]
+            if top_imgs:
+                # Prefer high-res 'b' prefix
+                b_imgs = [i for i in top_imgs if "/b" in i.split("/")[-1]]
+                return b_imgs[0] if b_imgs else top_imgs[0]
+
+            # Fallback to other motherboard non-box images
+            other_imgs = [
+                urljoin(url, img) for img in imgs
+                if "upload/motherboard" in img.lower() and "box" not in img.lower()
+            ]
+            if other_imgs:
+                b_imgs = [i for i in other_imgs if "/b" in i.split("/")[-1]]
+                return b_imgs[0] if b_imgs else other_imgs[0]
+        except Exception as e:
+            logger.debug("Failed Biostar search for %s: %s", url, e)
+
         return None
 
     def find_html_meta_image(self, url: str) -> Optional[str]:
@@ -248,16 +301,25 @@ class BoardImageFetcher:
             if img_url:
                 return img_url
 
-            # Fallback for pages that store images in specific JSON or gallery tags
-            # e.g., ASUS dlcdnwebimgs or Gigabyte staticfile
+            # Fallback for pages that store images in gallery or specific CDN patterns
             if "asus.com" in domain:
                 asus_matches = re.findall(r'https://dlcdnwebimgs\.asus\.com/gain/[A-Za-z0-9\-]+', resp.text)
                 if asus_matches:
                     return asus_matches[0]
             elif "gigabyte.com" in domain:
-                giga_matches = re.findall(r'https://static\.gigabyte\.com/StaticFile/Image/Global/[a-f0-9]+/Product[a-zA-Z0-9]+/\d+', resp.text)
+                giga_matches = re.findall(
+                    r'https://static\.gigabyte\.com/StaticFile/Image/Global/[a-f0-9]+/Product[a-zA-Z0-9]+/\d+',
+                    resp.text,
+                )
                 if giga_matches:
                     return giga_matches[0]
+            elif "msi.com" in domain:
+                msi_matches = re.findall(
+                    r'https://storage-asset\.msi\.com/global/picture/product/[^"\'\s]+\.(?:webp|png|jpg)',
+                    resp.text,
+                )
+                if msi_matches:
+                    return msi_matches[0]
 
         except Exception as e:
             logger.debug("Failed to fetch HTML for %s: %s", url, e)
@@ -266,13 +328,18 @@ class BoardImageFetcher:
 
     def resolve_image_url(self, board: dict[str, Any]) -> Optional[str]:
         """Resolve high-res motherboard PCB image URL based on manufacturer brand."""
-        brand = (board.get("brand") or "").strip()
+        brand = (board.get("brand") or "").strip().lower()
         url = board.get("typed", {}).get("website_url") or board.get("specs", {}).get("Links", {}).get("Website", "")
 
-        if brand.lower() == "asrock":
+        if brand == "asrock":
             asrock_img = self.find_asrock_image_url(board)
             if asrock_img:
                 return asrock_img
+
+        if brand == "biostar" and url:
+            biostar_img = self.find_biostar_image_url(url)
+            if biostar_img:
+                return biostar_img
 
         if url:
             return self.find_html_meta_image(url)
@@ -293,16 +360,13 @@ class BoardImageFetcher:
                 logger.warning("Failed to download image %s (HTTP %s)", img_url, resp.status_code)
                 return None
 
-            # Open with Pillow
             img = Image.open(io.BytesIO(resp.content))
 
-            # Sanity check dimensions (must be reasonable motherboard photo)
             width, height = img.size
             if width < 250 or height < 250:
                 logger.warning("Image too small (%dx%d) for %s from %s", width, height, board_id, img_url)
                 return None
 
-            # Determine mode - preserve alpha if present
             if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
                 processed_img = img.convert("RGBA")
             else:
@@ -340,7 +404,7 @@ class BoardImageFetcher:
             logger.error("Failed processing image for %s (%s): %s", board_id, img_url, e)
             return None
 
-    def process_board(self, board: dict[str, Any]) -> str:
+    def process_board(self, board: dict[str, Any], tag: str = "") -> str:
         """Process a single board. Returns status: 'success', 'skipped', 'not_found', 'error'."""
         board_id = board.get("id", "")
         brand = board.get("brand", "")
@@ -350,26 +414,25 @@ class BoardImageFetcher:
             return "error"
 
         if self.should_skip(board_id):
-            logger.debug("Skipping already processed board: %s", board_id)
+            logger.debug("[%s] Skipping already present: %s", tag or brand, board_id)
             return "skipped"
 
         url = board.get("typed", {}).get("website_url") or board.get("specs", {}).get("Links", {}).get("Website", "")
-        logger.info("Resolving image for [%s] %s (%s)...", brand, model, board_id)
+        logger.info("[%s] Resolving %s (%s)...", tag or brand, model, board_id)
 
         img_url = self.resolve_image_url(board)
         if not img_url:
-            logger.info("  [-] No image found for %s", board_id)
-            self.manifest[board_id] = {
+            logger.info("  [%s] [-] No image found for %s", tag or brand, board_id)
+            self.manifest.record(board_id, {
                 "status": "not_found",
                 "brand": brand,
                 "model": model,
                 "page_url": url,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-            self._save_manifest()
+            })
             return "not_found"
 
-        logger.info("  [+] Found image candidate: %s", img_url)
+        logger.info("  [%s] [+] Found candidate: %s", tag or brand, img_url)
 
         if self.dry_run:
             return "success"
@@ -377,13 +440,14 @@ class BoardImageFetcher:
         result = self.download_and_process_image(img_url, board_id)
         if result:
             logger.info(
-                "  [OK] Saved %s (%dx%d, %d KB)",
+                "  [%s] [OK] Saved %s (%dx%d, %d KB)",
+                tag or brand,
                 result["file"],
                 result["width"],
                 result["height"],
                 result["file_size"] // 1024,
             )
-            self.manifest[board_id] = {
+            self.manifest.record(board_id, {
                 "status": "success",
                 "brand": brand,
                 "model": model,
@@ -395,56 +459,77 @@ class BoardImageFetcher:
                 "height": result["height"],
                 "size_bytes": result["file_size"],
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-            self._save_manifest()
+            })
             return "success"
         else:
-            self.manifest[board_id] = {
+            self.manifest.record(board_id, {
                 "status": "error",
                 "brand": brand,
                 "model": model,
                 "image_url": img_url,
                 "page_url": url,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-            self._save_manifest()
+            })
             return "error"
 
 
-def interleave_boards_by_domain(boards: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """
-    Groups boards by manufacturer domain/brand and round-robins across them
-    to interleave network requests, avoiding consecutive hits to the same domain.
-    """
-    domain_buckets: dict[str, deque[dict[str, Any]]] = defaultdict(deque)
+def run_domain_worker(
+    domain_key: str,
+    boards: list[dict[str, Any]],
+    output_dir: str,
+    manifest: ThreadSafeManifest,
+    base_delay: float,
+    impersonate: str,
+    force: bool,
+    dry_run: bool,
+) -> dict[str, int]:
+    """Independent worker thread for a specific manufacturer domain."""
+    fetcher = BoardImageFetcher(
+        output_dir=output_dir,
+        manifest=manifest,
+        base_delay=base_delay,
+        impersonate=impersonate,
+        force=force,
+        dry_run=dry_run,
+    )
+    counts = defaultdict(int)
+    total = len(boards)
+    logger.info(">>> Worker started for [%s]: %d boards to process", domain_key.upper(), total)
+
+    for idx, board in enumerate(boards, 1):
+        tag = f"{domain_key.upper()} {idx}/{total}"
+        status = fetcher.process_board(board, tag=tag)
+        counts[status] += 1
+
+    logger.info("<<< Worker finished for [%s]: %s", domain_key.upper(), dict(counts))
+    return dict(counts)
+
+
+def partition_boards_by_domain(boards: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """Group boards into separate queues by manufacturer brand / domain."""
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    top_brands = {"asrock", "asus", "gigabyte", "msi", "biostar"}
 
     for b in boards:
-        brand = (b.get("brand") or "other").lower()
-        domain_buckets[brand].append(b)
+        brand = (b.get("brand") or "").strip().lower()
+        if brand in top_brands:
+            groups[brand].append(b)
+        else:
+            groups["other"].append(b)
 
-    interleaved = []
-    bucket_keys = list(domain_buckets.keys())
-    # Sort keys for deterministic execution
-    bucket_keys.sort()
-
-    while any(len(q) > 0 for q in domain_buckets.values()):
-        for key in bucket_keys:
-            q = domain_buckets[key]
-            if q:
-                interleaved.append(q.popleft())
-
-    return interleaved
+    return groups
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch AM5 motherboard PCB photographs.")
+    parser = argparse.ArgumentParser(description="Fetch AM5 motherboard PCB photographs concurrently.")
     parser.add_argument("--boards-file", default="data/boards.json", help="Path to boards.json")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Destination directory for images")
-    parser.add_argument("--limit", type=int, default=0, help="Maximum number of boards to process (0 = all)")
+    parser.add_argument("--limit", type=int, default=0, help="Maximum number of boards to process total (0 = all)")
     parser.add_argument("--brand", default="", help="Filter by manufacturer brand (e.g. ASRock, ASUS, Gigabyte, MSI)")
     parser.add_argument("--chipset", default="", help="Filter by chipset (e.g. X870E, B650)")
     parser.add_argument("--ids", default="", help="Comma-separated list of board IDs to process")
-    parser.add_argument("--delay", type=float, default=1.5, help="Base delay (seconds) between hits to same domain")
+    parser.add_argument("--delay", type=float, default=1.5, help="Base delay (seconds) between hits to SAME domain")
+    parser.add_argument("--workers", type=int, default=6, help="Concurrent domain workers (default: 6)")
     parser.add_argument("--dry-run", action="store_true", help="Locate images without downloading or saving WebP")
     parser.add_argument("--force", action="store_true", help="Re-fetch even if image already exists")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose debug logging")
@@ -475,35 +560,68 @@ def main():
         id_set = {i.strip() for i in args.ids.split(",") if i.strip()}
         filtered = [b for b in filtered if b.get("id") in id_set]
 
-    logger.info("Found %d eligible boards matching criteria.", len(filtered))
+    manifest = ThreadSafeManifest(args.output_dir)
 
-    fetcher = BoardImageFetcher(
-        output_dir=args.output_dir,
-        base_delay=args.delay,
-        force=args.force,
-        dry_run=args.dry_run,
+    # Filter out already satisfied boards
+    if not args.force:
+        pending = [
+            b for b in filtered
+            if not (
+                os.path.exists(os.path.join(args.output_dir, f"{b.get('id')}_board.webp"))
+                and os.path.exists(os.path.join(args.output_dir, f"{b.get('id')}_board_thumb.webp"))
+            )
+        ]
+    else:
+        pending = filtered
+
+    logger.info(
+        "Total matching: %d boards | Already present: %d | Pending: %d",
+        len(filtered),
+        len(filtered) - len(pending),
+        len(pending),
     )
 
-    # Filter out already satisfied boards prior to queueing if limit applies
-    pending = [b for b in filtered if not fetcher.should_skip(b.get("id", ""))]
-    logger.info("%d boards pending download (%d already exist).", len(pending), len(filtered) - len(pending))
-
-    # Interleave to prevent consecutive hits to any single host
-    interleaved = interleave_boards_by_domain(pending)
-
     if args.limit > 0:
-        interleaved = interleaved[: args.limit]
+        pending = pending[: args.limit]
 
-    logger.info("Starting processing batch of %d boards...", len(interleaved))
+    # Partition by domain
+    partitions = partition_boards_by_domain(pending)
+    active_partitions = {k: v for k, v in partitions.items() if len(v) > 0}
 
-    counts = defaultdict(int)
-    for idx, board in enumerate(interleaved, 1):
-        board_id = board.get("id", "")
-        logger.info("[%d/%d] Processing %s...", idx, len(interleaved), board_id)
-        status = fetcher.process_board(board)
-        counts[status] += 1
+    logger.info("Active domain queues to process concurrently: %s", {k: len(v) for k, v in active_partitions.items()})
 
-    logger.info("Finished batch. Summary: %s", dict(counts))
+    total_counts = defaultdict(int)
+
+    # Launch parallel workers per domain
+    max_workers = min(args.workers, max(1, len(active_partitions)))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_domain = {
+            executor.submit(
+                run_domain_worker,
+                domain_key=d_key,
+                boards=d_boards,
+                output_dir=args.output_dir,
+                manifest=manifest,
+                base_delay=args.delay,
+                impersonate="chrome124",
+                force=args.force,
+                dry_run=args.dry_run,
+            ): d_key
+            for d_key, d_boards in active_partitions.items()
+        }
+
+        for future in concurrent.futures.as_completed(future_to_domain):
+            d_key = future_to_domain[future]
+            try:
+                res = future.result()
+                for k, v in res.items():
+                    total_counts[k] += v
+            except Exception as e:
+                logger.error("Domain worker [%s] raised exception: %s", d_key, e)
+
+    logger.info("=" * 60)
+    logger.info("ALL DOMAIN WORKERS FINISHED. Overall Summary: %s", dict(total_counts))
+    logger.info("=" * 60)
 
 
 if __name__ == "__main__":
