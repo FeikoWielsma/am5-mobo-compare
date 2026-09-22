@@ -1,18 +1,10 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { compareStore } from '$lib/stores/compare';
+  import FreshnessBadge from '$lib/components/FreshnessBadge.svelte';
   let { data, children } = $props();
 
   const version = $derived(data?.buildMeta?.schema_version ? `v${data.buildMeta.schema_version}` : 'v1.0');
-  const formattedDate = $derived.by(() => {
-    if (!data?.buildMeta?.build_timestamp) return '';
-    try {
-      const d = new Date(data.buildMeta.build_timestamp);
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return '';
-    }
-  });
 </script>
 
 <svelte:head>
@@ -33,11 +25,11 @@
         <span class="text-secondary small d-none d-sm-inline">
           Data by <a href="https://docs.google.com/spreadsheets/d/1NQHkDEcgDPm34Mns3C93K6SJoBnua-x9O-y_6hv8sPs" target="_blank" rel="noreferrer" class="text-info text-decoration-none fw-semibold">Thriplerex</a>
         </span>
-        {#if formattedDate}
+        {#if data?.buildMeta}
           <span class="text-secondary small d-none d-md-inline">•</span>
-          <span class="text-secondary small d-none d-md-inline">
-            <i class="bi bi-clock-history me-1"></i>Updated {formattedDate}
-          </span>
+          <div class="d-none d-md-inline-flex align-items-center">
+            <FreshnessBadge buildMeta={data.buildMeta} />
+          </div>
         {/if}
       </div>
 

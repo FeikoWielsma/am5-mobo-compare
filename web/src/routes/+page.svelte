@@ -25,6 +25,9 @@
   import ColumnFilterDropdown from '$lib/components/ColumnFilterDropdown.svelte';
   import ColumnPickerModal, { type FeatureItem } from '$lib/components/ColumnPickerModal.svelte';
   import VirtualizedBoardTable from '$lib/components/VirtualizedBoardTable.svelte';
+  import NumericRangeFilter from '$lib/components/NumericRangeFilter.svelte';
+  import LaneSharingSimulator from '$lib/components/LaneSharingSimulator.svelte';
+  import { parseSearchQuery, matchesQuery } from '$lib/utils/query_parser';
   import { analyzeLaneSharing } from '$lib/utils/bottleneck_analyzer';
 
   let { data } = $props();
@@ -109,6 +112,22 @@
   let openDropdownId = $state<string | null>(null);
   let showColumnPicker = $state(false);
   let inspectingBoard = $state<any | null>(null);
+  let rangePrice = $state<{ min: number | null; max: number | null }>({ min: null, max: null });
+  let rangeM2 = $state<{ min: number | null; max: number | null }>({ min: null, max: null });
+  let rangeSata = $state<{ min: number | null; max: number | null }>({ min: null, max: null });
+  let rangePhases = $state<{ min: number | null; max: number | null }>({ min: null, max: null });
+  let showRangeFilters = $state(false);
+  let activeSimulatorBoard = $state<any | null>(null);
+  let selectedDrawerImg = $state<'board' | 'io'>('board');
+
+  let parsedSearch = $derived(parseSearchQuery(searchQuery));
+
+  let hasActiveRanges = $derived(
+    rangePrice.min !== null || rangePrice.max !== null ||
+    rangeM2.min !== null || rangeM2.max !== null ||
+    rangeSata.min !== null || rangeSata.max !== null ||
+    rangePhases.min !== null || rangePhases.max !== null
+  );
 
   // Derived dynamic keys dictionary: { dyn1: "path...", dyn2: "path..." }
   let dynamicKeys = $derived.by(() => {
@@ -195,6 +214,33 @@
           twoDimm: filterTwoDimm,
           colorTheme: selectedColorTheme
         }
+      }).filter((b) => {
+        // Evaluate parsed query (structured tokens)
+        if (!matchesQuery(b, parsedSearch)) return false;
+
+        // Evaluate numeric range filters
+        if (rangePrice.min !== null || rangePrice.max !== null) {
+          const price = Number(b.typed?.price_usd);
+          if (!price || isNaN(price)) return false;
+          if (rangePrice.min !== null && price < rangePrice.min) return false;
+          if (rangePrice.max !== null && price > rangePrice.max) return false;
+        }
+        if (rangeM2.min !== null || rangeM2.max !== null) {
+          const m2 = Number(b.typed?.m2_total?.raw ?? b.typed?.m2_m ?? b.specs?._scorecard?.m2_total ?? 0);
+          if (rangeM2.min !== null && m2 < rangeM2.min) return false;
+          if (rangeM2.max !== null && m2 > rangeM2.max) return false;
+        }
+        if (rangeSata.min !== null || rangeSata.max !== null) {
+          const sata = Number(b.typed?.sata_ports ?? 0);
+          if (rangeSata.min !== null && sata < rangeSata.min) return false;
+          if (rangeSata.max !== null && sata > rangeSata.max) return false;
+        }
+        if (rangePhases.min !== null || rangePhases.max !== null) {
+          const p = Number(b.typed?.vrm_phases?.vcore ?? 0);
+          if (rangePhases.min !== null && p < rangePhases.min) return false;
+          if (rangePhases.max !== null && p > rangePhases.max) return false;
+        }
+        return true;
       }),
       sortState,
       dynamicKeys
@@ -203,6 +249,7 @@
 
   let hasActiveFilters = $derived.by(() => {
     if (searchQuery.trim() !== '') return true;
+    if (hasActiveRanges) return true;
     if (
       filterPcie5 ||
       filterUsb4 ||
@@ -249,6 +296,10 @@
     filterBackConnect = false;
     filterTwoDimm = false;
     selectedColorTheme = 'all';
+    rangePrice = { min: null, max: null };
+    rangeM2 = { min: null, max: null };
+    rangeSata = { min: null, max: null };
+    rangePhases = { min: null, max: null };
     for (const key in columnFilters) {
       columnFilters[key] = new Set();
     }
@@ -865,7 +916,7 @@
     class="row g-2 align-items-center sticky-toolbar"
     bind:clientHeight={toolbarHeight}
   >
-    <!-- Global Multi-word Search -->
+    <!-- Global Multi-word Search & Power-User Query -->
     <div class="col-12 col-md-5">
       <div class="input-group input-group-sm">
         <span class="input-group-text bg-dark text-secondary border-secondary">
@@ -874,7 +925,7 @@
         <input
           type="search"
           class="form-control form-control-sm bg-dark text-light border-secondary"
-          placeholder="Global search: brand, model, chipset, audio, lan... (e.g. 'asus x870e wifi7')"
+          placeholder="Search or query: 'x870e', 'price<350', 'm2>=4', 'wifi:7'..."
           bind:value={searchQuery}
           oninput={saveStateToUrl}
         />
@@ -890,6 +941,18 @@
             <i class="bi bi-x"></i>
           </button>
         {/if}
+        <button
+          type="button"
+          class="btn {hasActiveRanges || showRangeFilters ? 'btn-primary text-white' : 'btn-outline-secondary text-light'} border-secondary"
+          onclick={() => (showRangeFilters = !showRangeFilters)}
+          title="Toggle numeric range filters (Price, M.2, SATA, VRM)"
+        >
+          <i class="bi bi-sliders"></i>
+          <span class="d-none d-sm-inline ms-1">Ranges</span>
+          {#if hasActiveRanges}
+            <span class="badge bg-light text-dark ms-1" style="font-size: 0.65rem;">Active</span>
+          {/if}
+        </button>
       </div>
     </div>
 
@@ -945,6 +1008,106 @@
       </button>
     </div>
   </div>
+
+  <!-- Query Parser Token Pills (if structured tokens exist) -->
+  {#if parsedSearch.numericFilters.length > 0 || parsedSearch.keyValueFilters.length > 0 || parsedSearch.booleanFilters.length > 0}
+    <div class="d-flex flex-wrap gap-1 align-items-center mb-2 px-1">
+      <span class="text-secondary small me-1" style="font-size: 0.72rem;">Active query filters:</span>
+      {#each parsedSearch.numericFilters as nf}
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.72rem;">
+          {nf.field} {nf.operator} {nf.field === 'price' ? '$' : ''}{nf.value}
+        </span>
+      {/each}
+      {#each parsedSearch.keyValueFilters as kv}
+        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size: 0.72rem;">
+          {kv.key}: {kv.value}
+        </span>
+      {/each}
+      {#each parsedSearch.booleanFilters as bf}
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.72rem;">
+          {bf.value ? 'has:' : 'no:'}{bf.key}
+        </span>
+      {/each}
+      {#if parsedSearch.freeText.length > 0}
+        <span class="badge bg-secondary-subtle text-secondary border border-secondary" style="font-size: 0.72rem;">
+          text: {parsedSearch.freeText.join(' ')}
+        </span>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Range Filter Shelf (Collapsible) -->
+  {#if showRangeFilters}
+    <div class="card bg-black border-secondary p-3 mb-2 shadow-sm rounded-3">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-sliders text-primary"></i>
+          <span class="fw-bold small text-light">Numeric Range Filters</span>
+        </div>
+        {#if hasActiveRanges}
+          <button
+            type="button"
+            class="btn btn-link btn-sm text-danger text-decoration-none p-0"
+            style="font-size: 0.75rem;"
+            onclick={() => {
+              rangePrice = { min: null, max: null };
+              rangeM2 = { min: null, max: null };
+              rangeSata = { min: null, max: null };
+              rangePhases = { min: null, max: null };
+            }}
+          >
+            Clear Ranges
+          </button>
+        {/if}
+      </div>
+      <div class="row g-2">
+        <div class="col-12 col-sm-6 col-lg-3">
+          <NumericRangeFilter
+            label="Price (USD)"
+            min={50}
+            max={1200}
+            step={10}
+            unit="$"
+            value={rangePrice}
+            onchange={(v) => (rangePrice = v)}
+          />
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <NumericRangeFilter
+            label="Total M.2 Slots"
+            min={1}
+            max={6}
+            step={1}
+            unit=""
+            value={rangeM2}
+            onchange={(v) => (rangeM2 = v)}
+          />
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <NumericRangeFilter
+            label="SATA Ports"
+            min={0}
+            max={12}
+            step={1}
+            unit=""
+            value={rangeSata}
+            onchange={(v) => (rangeSata = v)}
+          />
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <NumericRangeFilter
+            label="VRM VCore Phases"
+            min={4}
+            max={28}
+            step={1}
+            unit=""
+            value={rangePhases}
+            onchange={(v) => (rangePhases = v)}
+          />
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- Motherboard Table with Dynamic Columns and Filter Dropdowns (Virtualized) -->
   <VirtualizedBoardTable
@@ -1005,7 +1168,9 @@
   {@const typed = b.typed || {}}
   {@const sc = b.specs?._scorecard || {}}
   {@const isSelected = $compareStore.includes(b.id)}
-  {@const fullImg = typed.rear_io_image || b.specs?.['Rear I/O']?.['Rear I/O Image']}
+  {@const boardImg = typed.board_image || b.specs?.General?.['Board Image']}
+  {@const ioImg = typed.rear_io_image || b.specs?.['Rear I/O']?.['Rear I/O Image']}
+  {@const fullImg = boardImg || ioImg}
 
   <button
     type="button"
@@ -1072,6 +1237,15 @@
             <i class="bi bi-box-arrow-up-right"></i> Official Page
           </a>
         {/if}
+
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-warning"
+          onclick={() => (activeSimulatorBoard = b)}
+          title="Open interactive PCIe Lane Sharing Simulator"
+        >
+          <i class="bi bi-diagram-3 me-1"></i> Simulate Lanes
+        </button>
       </div>
 
       <a
@@ -1099,16 +1273,41 @@
         {/if}
       </div>
 
-      <!-- Rear I/O Panel Image -->
-      {#if fullImg && (fullImg.startsWith('/') || fullImg.startsWith('http'))}
+      <!-- Motherboard PCB and Rear I/O Panel Images -->
+      {#if boardImg || ioImg}
         <div class="card bg-black border-secondary p-2 text-center mb-3">
-          <span class="text-secondary small d-block mb-1">Rear I/O Panel</span>
-          <img
-            src={fullImg}
-            alt="Rear I/O"
-            class="img-fluid rounded"
-            style="max-height: 140px; object-fit: contain;"
-          />
+          {#if boardImg && ioImg}
+            <div class="d-flex justify-content-center gap-1 mb-2">
+              <button
+                type="button"
+                class="btn btn-xs {selectedDrawerImg === 'board' ? 'btn-primary' : 'btn-outline-secondary text-light'}"
+                onclick={() => (selectedDrawerImg = 'board')}
+              >
+                Motherboard PCB
+              </button>
+              <button
+                type="button"
+                class="btn btn-xs {selectedDrawerImg === 'io' ? 'btn-primary' : 'btn-outline-secondary text-light'}"
+                onclick={() => (selectedDrawerImg = 'io')}
+              >
+                Rear I/O Panel
+              </button>
+            </div>
+            <img
+              src={selectedDrawerImg === 'board' ? boardImg : ioImg}
+              alt={selectedDrawerImg === 'board' ? `${b.brand} ${b.model} PCB` : 'Rear I/O'}
+              class="img-fluid rounded"
+              style="max-height: 180px; object-fit: contain;"
+            />
+          {:else}
+            <span class="text-secondary small d-block mb-1">{boardImg ? 'Motherboard PCB' : 'Rear I/O Panel'}</span>
+            <img
+              src={boardImg || ioImg}
+              alt="{b.brand} {b.model}"
+              class="img-fluid rounded"
+              style="max-height: 140px; object-fit: contain;"
+            />
+          {/if}
         </div>
       {/if}
 
@@ -1320,10 +1519,20 @@
                 <i class="bi bi-diagram-2 text-info"></i>
                 <h3 class="h6 mb-0 text-light">Lane Sharing & Bottlenecks</h3>
               </div>
-              <span class="badge {laneResult.summaryBadge.variant === 'danger' ? 'bg-danger' : laneResult.summaryBadge.variant === 'warning' ? 'bg-warning text-dark' : 'bg-success'}" style="font-size: 0.7rem;">
-                <i class="bi {laneResult.summaryBadge.icon} me-1"></i>
-                {laneResult.summaryBadge.text}
-              </span>
+              <div class="d-flex align-items-center gap-1.5">
+                <button
+                  type="button"
+                  class="btn btn-xs btn-outline-warning py-0 px-2"
+                  onclick={() => (activeSimulatorBoard = b)}
+                  title="Simulate lane allocations for this board"
+                >
+                  <i class="bi bi-diagram-3 me-1"></i>Simulate
+                </button>
+                <span class="badge {laneResult.summaryBadge.variant === 'danger' ? 'bg-danger' : laneResult.summaryBadge.variant === 'warning' ? 'bg-warning text-dark' : 'bg-success'}" style="font-size: 0.7rem;">
+                  <i class="bi {laneResult.summaryBadge.icon} me-1"></i>
+                  {laneResult.summaryBadge.text}
+                </span>
+              </div>
             </div>
             <div class="card-body py-2">
               {#if laneResult.warnings.length > 0}
@@ -1357,6 +1566,13 @@
     </div>
   </div>
 {/if}
+
+<!-- Interactive PCIe Lane Sharing Simulator Dialog -->
+<LaneSharingSimulator
+  board={activeSimulatorBoard}
+  isOpen={Boolean(activeSimulatorBoard)}
+  onClose={() => (activeSimulatorBoard = null)}
+/>
 
 <style>
   /* Quick Filter Chips Carousel */

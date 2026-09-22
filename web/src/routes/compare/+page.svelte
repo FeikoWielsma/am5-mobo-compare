@@ -4,6 +4,7 @@
   import { compareStore } from '$lib/stores/compare';
   import { parseNotesList, parseM2Generations, m2GenBadgeClass, matchesX8X8 } from '$lib/table_logic';
   import ExportModal from '$lib/components/ExportModal.svelte';
+  import LaneSharingSimulator from '$lib/components/LaneSharingSimulator.svelte';
 
   let { data } = $props();
   let allBoards = $derived(data.boards || []);
@@ -14,6 +15,7 @@
   let showExportModal = $state(false);
   let collapsedSections = $state<Set<string>>(new Set());
   let activeModalImage = $state<{ src: string; title: string } | null>(null);
+  let activeSimulatorBoard = $state<any | null>(null);
 
   // Load persisted collapsed sections from localStorage
   $effect(() => {
@@ -852,6 +854,17 @@
                             <i class="bi {laneInfo.summaryBadge.icon} me-1"></i>
                             {laneInfo.summaryBadge.text}
                           </span>
+                          <div class="mt-1">
+                            <button
+                              type="button"
+                              class="btn btn-xs btn-outline-warning py-0 px-2"
+                              style="font-size: 0.68rem;"
+                              onclick={() => (activeSimulatorBoard = board)}
+                              title="Simulate lane allocations for {board.brand} {board.model}"
+                            >
+                              <i class="bi bi-diagram-3 me-0.5"></i> Simulate
+                            </button>
+                          </div>
                           {#if laneInfo.warnings.length > 0}
                             <div class="small text-secondary mt-1 text-start" style="font-size: 0.72rem; max-width: 220px; margin: 0 auto;">
                               {#each laneInfo.warnings as w}
@@ -1122,6 +1135,13 @@
     </div>
   </div>
 {/if}
+
+<!-- Interactive PCIe Lane Sharing Simulator Dialog -->
+<LaneSharingSimulator
+  board={activeSimulatorBoard}
+  isOpen={Boolean(activeSimulatorBoard)}
+  onClose={() => (activeSimulatorBoard = null)}
+/>
 
 <style>
   .sticky-col-header {
