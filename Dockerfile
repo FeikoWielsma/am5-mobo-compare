@@ -1,6 +1,9 @@
 # Use a lightweight Python base image
 FROM python:3.11-slim
 
+# Refresh runtime security packages when rebuilding the image.
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory inside the container
 WORKDIR /app
 
